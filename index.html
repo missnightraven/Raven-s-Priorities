@@ -461,7 +461,7 @@ async function importBackup(file){
     for(const[k,d]of Object.entries(j.files||{})){const b=await (await fetch(d)).blob();await IDB.set('files',k,b);URLS[k]=URL.createObjectURL(b)}
     st.data={events:[],subjects:[],lessons:[],expenses:[],...(j.data||{})};Object.assign(st.cfg,j.cfg||{});
     await persist();render();toast('Копия загружена');
-  }catch(e){toast('Это не файл копии Raven's Priorities')}
+  }catch(e){toast('Это не файл копии Raven\u2019s Priorities')}
 }
 
 /* ---------- events ---------- */
