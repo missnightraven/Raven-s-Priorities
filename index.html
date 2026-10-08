@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Raven's Priorities">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Raven's Priorities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one-column phone app, sticky header, fixed bottom nav, sheets slide over content */
+:root{
+  --ink:#111114;--muted:#5f5f66;--line:#dcdcdf;--soft:#f1f1f3;--paper:#ffffff;
+  --op:.85;--card:rgba(255,255,255,var(--op));--danger:#b42318;
+  --display:'Space Mono',ui-monospace,Menlo,monospace;
+  --body:'Onest',-apple-system,'Segoe UI',Roboto,sans-serif;
+  --r:12px;color-scheme:light;
+}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+img{max-width:100%}
+html,body{height:100%}
+body{background:var(--paper) center/cover no-repeat fixed;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--ink)}
+.app{max-width:520px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom,0px));min-height:100%}
+.top{position:relative;gap:6px!important;padding:14px 0 10px;display:flex;align-items:center;gap:14px;background:transparent}
+.top h1{font-family:var(--display);font-size:clamp(17px,5vw,22px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;margin:0;flex:1;min-width:0;text-wrap:balance}
+.ib{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px}
+.ib:focus-visible,.btn:focus-visible,.nav button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ib svg{width:24px;height:24px}
+.ib.dim{color:#9a9aa1}.ib.dim svg{width:21px;height:21px}
+svg.i{display:block;width:22px;height:22px;flex:none}
+.seg{display:flex;border:1px solid var(--ink);border-radius:12px;padding:3px;background:var(--card)}
+.seg button{flex:1;padding:7px 0;border-radius:9px;font-size:14px}
+.seg button.on{background:var(--ink);color:#fff}
+.stack{display:flex;flex-direction:column;gap:10px}
+.cap{font-size:13px;color:var(--muted)}
+.mono{font-family:var(--display)}
+.panel{background:var(--card);border-radius:16px;padding:12px}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}
+.dow{font-family:var(--display);font-size:12px;color:var(--muted);margin-bottom:4px}
+.grid{row-gap:2px;font-family:var(--display);font-size:13px}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px 0}
+.day .n{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.day.today .n{outline:1px solid var(--ink)}
+.day.sel .n{background:var(--ink);color:#fff}
+.day .dots{display:flex;gap:2px;height:6px}
+.dot{width:6px;height:6px;border-radius:50%}
+.ring{width:6px;height:6px;border-radius:50%;border:1.5px solid}
+.mini .day .n{width:26px;height:26px;font-size:12px;border-radius:8px}
+.chip{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;text-align:left;width:100%}
+.chip .t{font-family:var(--display);font-size:13px;min-width:44px;opacity:.9}
+.chip .x{flex:1;min-width:0;overflow-wrap:anywhere}
+.chip svg{width:18px;height:18px;flex:none}
+.chip.once{background:var(--card);border:1.5px dashed}
+.empty{padding:18px 12px;text-align:center;color:var(--muted);font-size:14px;background:var(--card);border-radius:12px}
+.wk{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:start}
+.wk .lbl{font-family:var(--display);font-size:13px;padding-top:10px;line-height:1.3}
+.subj{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.subj .ico{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center}
+.subj .ico svg{width:28px;height:28px}
+.subj .ico img{width:34px;height:34px;object-fit:cover;border-radius:9px}
+.subj>svg.i{width:20px;height:20px;opacity:.7}
+.subj .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.subj .nm{font-weight:600;font-size:16px}
+.subj .sub{font-size:13px;opacity:.85}
+.lesson{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;padding:11px 12px;border-radius:12px;width:100%;text-align:left}
+.lesson .d{font-family:var(--display);font-size:13px;line-height:1.35}
+.lesson .tp{font-weight:600}
+.lesson .mt{font-size:13px}
+.lesson .stp{font-size:13px;display:flex;gap:5px;align-items:center}
+.lesson .stp svg{width:14px;height:14px}
+.total{background:var(--card);border:1px solid var(--ink);border-radius:14px;padding:14px}
+.total .v{font-family:var(--display);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.cat{display:grid;grid-template-columns:128px minmax(0,1fr) 72px;align-items:center;gap:8px;font-size:14px}
+.bar{height:10px;border-radius:4px;background:var(--soft);overflow:hidden}
+.bar i{display:block;height:100%}
+.num{font-family:var(--display);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.tx{display:flex;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.tx .a{font-family:var(--display);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:8px 0 calc(10px + env(safe-area-inset-bottom,0px))}
+.nav .in{max-width:520px;margin:0 auto;display:flex;justify-content:space-around}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:#9a9aa1;min-width:76px;padding:4px 0;border-radius:10px}
+.nav button svg{width:28px;height:28px}
+.nav button.on{color:var(--ink);font-weight:600}
+.scrim{position:fixed;inset:0;background:rgba(17,17,20,.35);z-index:30}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;max-height:92%;overflow-y:auto;overflow-x:hidden;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.sheet .in{width:100%;min-width:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.sheet h2{font-family:var(--display);font-size:20px;margin:0;flex:1}
+.f label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.f input,.f select{display:block;width:100%;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;border:1px solid var(--ink);border-radius:10px;padding:10px 11px;background:#fff;font-size:16px;min-height:44px}
+.f input[type=date],.f input[type=time]{text-align:left}
+.f input::-webkit-date-and-time-value{text-align:left}
+.row2>*,.row3>*{min-width:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.days button{border:1px solid var(--ink);border-radius:9px;padding:9px 0;font-family:var(--display);font-size:12px}
+.days button.on{background:var(--ink);color:#fff}
+.sw{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sw button{width:34px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.15)}
+.sw button.on{outline:2px solid var(--ink);outline-offset:2px}
+.sw input[type=color]{width:34px;height:34px;border:1px dashed var(--ink);border-radius:10px;padding:2px;background:#fff}
+.preview{font-size:15px}
+.btn{border-radius:12px;padding:13px;text-align:center;font-size:15px;width:100%}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.ghost{border:1px solid var(--ink)}
+.btn.del{color:var(--danger)}
+.pack{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.pack button{aspect-ratio:1;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center}
+.pack button svg{width:24px;height:24px}
+.pack button.on{outline:2px solid var(--ink);outline-offset:1px}
+.thumb{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.thumb svg{width:30px;height:30px}.thumb img{width:100%;height:100%;object-fit:cover}
+.bgprev{height:200px;border-radius:14px;background:var(--soft) center/cover no-repeat;display:flex;align-items:flex-end;padding:10px 12px;font-size:13px}
+.range{width:100%;accent-color:var(--ink)}
+.note{font-size:13px;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;z-index:40}
+@media (max-width:380px){.cat{grid-template-columns:104px minmax(0,1fr) 64px}.pack{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top"><h1>Raven's Priorities</h1></div>
+  <div class="empty">Загружаю ваш план, уроки и траты…</div>
+</div>
+<nav class="nav" aria-label="Разделы"><div class="in">
+  <button id="nav-plan" data-act="view" data-v="plan"></button>
+  <button id="nav-lessons" data-act="view" data-v="lessons"></button>
+  <button id="nav-money" data-act="view" data-v="money"></button>
+</div></nav>
+<div id="layer"></div>
+
+<script>
+(function(){
+const P=['#0F1D45','#C38EB4','#E1CBD7','#86A8CF','#26425A','#0E1E2E'];
+const CATS=[['food','Еда','#26425A'],['online','Покупки онлайн','#C38EB4'],['offline','Покупки офлайн','#E1CBD7'],['services','Услуги','#86A8CF'],['other','Другое','#0F1D45']];
+const MON=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const DOWF=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+const S='<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+const IC={
+ plus:'<path d="M12 5v14M5 12h14"/>',left:'<path d="M15 6l-6 6 6 6"/>',right:'<path d="M9 6l6 6-6 6"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+ calendar:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+ school:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M22 9v6"/>',
+ wallet:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
+ repeat:'<path d="M4 11V9a3 3 0 0 1 3-3h12l-3-3M20 13v2a3 3 0 0 1-3 3H5l3 3"/>',
+ point:'<circle cx="12" cy="12" r="3" fill="currentColor"/>',
+ pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
+ upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',photo:'<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-8 8"/>'
+};
+const PACK={
+ math:'<path d="M9 20c2 0 2-2 2.6-6.5S13 4 15.5 4M8 11h7.5"/>',
+ atom:'<ellipse cx="12" cy="12" rx="9" ry="3.6"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+ code:'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/>',
+ cpu:'<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M9.5 3v4M14.5 3v4M9.5 17v4M14.5 17v4M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/>',
+ pick:'<path d="M12 21c-3-3-8-9-8-13 0-3 4-4 8-4s8 1 8 4c0 4-5 10-8 13z"/>',
+ brain:'<path d="M12 5.5a3 3 0 0 0-5.6-1.2A3 3 0 0 0 4 9a3 3 0 0 0 0 5 3 3 0 0 0 3 4.5 3 3 0 0 0 5 1z"/><path d="M12 5.5a3 3 0 0 1 5.6-1.2A3 3 0 0 1 20 9a3 3 0 0 1 0 5 3 3 0 0 1-3 4.5 3 3 0 0 1-5 1"/>',
+ book:'<path d="M4 19V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h13v-4"/>',
+ flask:'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 15h9"/>',
+ chart:'<path d="M4 20h16M4 20V4M7 15l4-5 3 3 5-6"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+ palette:'<path d="M12 3a9 9 0 0 0 0 18c1.4 0 2-1 2-2s-1-2 0-3 2-.5 4-.5a3 3 0 0 0 3-3C21 7 17 3 12 3z"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="7.5" r="1" fill="currentColor"/>',
+ yarn:'<circle cx="12" cy="12" r="8"/><path d="M6 8c4 0 8 3 10 9M5 13c4-1 8 1 10 7M9 4.5c3 2 6 6 6.5 12"/>',
+ sew:'<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>',
+ barbell:'<path d="M3 12h18M6 8v8M9 6v12M15 6v12M18 8v8"/>',
+ moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z"/><path d="M17 3l.6 1.4L19 5l-1.4.6L17 7l-.6-1.4L15 5l1.4-.6z"/>',
+ wave:'<path d="M2 12c2.5-6 4.5-6 7 0s4.5 6 7 0 3.5-4 6-1"/>',
+ music:'<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+ star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 2.8 1.1-6.1-4.5-4.3 6.1-.8z"/>'
+};
+const ico=(k,lib)=>S+((lib||IC)[k]||'')+'</svg>';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const m0=d=>(d.getDay()+6)%7;
+const weekStart=d=>addD(d,-m0(d));
+const today=()=>ymd(new Date());
+const money=n=>Math.round(n).toLocaleString('ru-RU')+' ₸';
+const lum=h=>{const n=parseInt(h.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;const f=c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)};return .2126*f(r)+.7152*f(g)+.0722*f(b)};
+const onC=h=>(/^#[0-9a-f]{6}$/i.test(h)&&lum(h)<.33)?'#fff':'#111114';
+const okHex=h=>/^#[0-9a-f]{6}$/i.test(h);
+const dLong=s=>{const d=parse(s);return DOWF[m0(d)]+', '+d.getDate()+' '+MONG[d.getMonth()]};
+const dShort=s=>{const d=parse(s);return DOW[m0(d)]};
+const dNum=s=>{const d=parse(s);return pad(d.getDate())+'.'+pad(d.getMonth()+1)};
+
+const st={view:'plan',mode:'month',sel:today(),cur:today(),subj:null,tab:'ahead',month:today().slice(0,7),
+  data:{events:[],subjects:[],lessons:[],expenses:[]},cfg:{bgMode:'color',bgColor:'#FFFFFF',bgAsset:null,op:.85},loaded:{},db:null,assets:null};
+let sheet=null;
+
+function occurs(e,d){
+  if(e.type==='once')return e.date===d;
+  if(e.start&&d<e.start)return false;
+  if(e.until&&d>e.until)return false;
+  return (e.days||[]).includes(m0(parse(d)));
+}
+const eventsOn=d=>st.data.events.filter(e=>occurs(e,d)).sort((a,b)=>(a.from||'99').localeCompare(b.from||'99'));
+
+function dots(d){
+  const ev=eventsOn(d).slice(0,3);
+  return ev.map(e=>e.type==='once'?'<i class="ring" style="border-color:'+esc(e.color)+'"></i>':'<i class="dot" style="background:'+esc(e.color)+'"></i>').join('');
+}
+function monthGrid(y,m,mini){
+  const first=new Date(y,m,1),n=new Date(y,m+1,0).getDate();let h='<div class="grid'+(mini?' mini':'')+'">';
+  for(let i=0;i<m0(first);i++)h+='<span></span>';
+  for(let i=1;i<=n;i++){const d=ymd(new Date(y,m,i));h+='<button class="day'+(d===st.sel?' sel':'')+(d===today()?' today':'')+'" data-act="sel" data-d="'+d+'" aria-label="'+esc(dLong(d))+'"><span class="n">'+i+'</span><span class="dots">'+dots(d)+'</span></button>'}
+  return h+'</div>';
+}
+function chip(e){
+  const c=e.color||P[0];const t=e.from?esc(e.from):'—';
+  if(e.type==='once')return '<button class="chip once" style="border-color:'+esc(c)+'" data-act="edit-ev" data-id="'+e.id+'"><span class="t">'+t+'</span><span class="x">'+esc(e.title)+'</span>'+ico('point')+'</button>';
+  return '<button class="chip" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="edit-ev" data-id="'+e.id+'"><span class="t">'+t+'</span><span class="x">'+esc(e.title)+'</span>'+ico('repeat')+'</button>';
+}
+function dayList(d){
+  const ev=eventsOn(d);
+  return '<div class="cap" style="padding-top:4px">'+esc(dLong(d))+'</div>'+(ev.length?'<div class="stack" style="gap:7px">'+ev.map(chip).join('')+'</div>':'<div class="empty">На этот день ничего нет. Нажмите «+», чтобы добавить событие.</div>');
+}
+
+function vPlan(){
+  const c=parse(st.cur);let title,body;
+  if(st.mode==='week'){
+    const ws=weekStart(parse(st.sel)),we=addD(ws,6);
+    title=ws.getDate()+' '+(ws.getMonth()!==we.getMonth()?MONG[ws.getMonth()]+' ':'')+'– '+we.getDate()+' '+MONG[we.getMonth()];
+    body='<div class="stack">'+[0,1,2,3,4,5,6].map(i=>{const d=ymd(addD(ws,i)),ev=eventsOn(d);return '<div class="wk"><button class="lbl" data-act="sel" data-d="'+d+'" style="text-align:left'+(d===today()?';font-weight:700':'')+'">'+DOW[i]+'<br>'+dNum(d)+'</button><div class="stack" style="gap:6px">'+(ev.length?ev.map(chip).join(''):'<div class="cap" style="padding:10px 0">—</div>')+'</div></div>'}).join('')+'</div>';
+  }else if(st.mode==='month'){
+    title=MON[c.getMonth()]+' '+c.getFullYear();
+    body='<div class="panel"><div class="dow">'+DOW.map(x=>'<span>'+x+'</span>').join('')+'</div>'+monthGrid(c.getFullYear(),c.getMonth())+'</div>'+legend()+dayList(st.sel);
+  }else{
+    const ms=[0,1,2].map(i=>new Date(c.getFullYear(),c.getMonth()+i,1));
+    title=MON[ms[0].getMonth()].slice(0,3)+' – '+MON[ms[2].getMonth()].slice(0,3)+' '+ms[2].getFullYear();
+    body=ms.map(m=>'<div class="panel"><div class="mono" style="font-weight:700;margin-bottom:6px">'+MON[m.getMonth()]+'</div><div class="dow">'+DOW.map(x=>'<span>'+x+'</span>').join('')+'</div>'+monthGrid(m.getFullYear(),m.getMonth(),1)+'</div>').join('')+legend()+dayList(st.sel);
+  }
+  return '<div class="top"><h1>'+esc(title)+'</h1><button class="ib" data-act="prev" aria-label="Назад">'+ico('left')+'</button><button class="ib" data-act="next" aria-label="Вперёд">'+ico('right')+'</button><button class="ib dim" data-act="settings" aria-label="Оформление">'+ico('gear')+'</button><button class="ib" data-act="new-ev" aria-label="Добавить событие">'+ico('plus')+'</button></div>'+
+  '<div class="stack"><div class="seg" role="tablist">'+[['week','Неделя'],['month','Месяц'],['q','3 месяца']].map(x=>'<button class="'+(st.mode===x[0]?'on':'')+'" data-act="mode" data-m="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+body+'</div>';
+}
+const legend=()=>'<div style="display:flex;gap:16px;font-size:13px;color:var(--muted)"><span style="display:flex;align-items:center;gap:6px"><i class="dot" style="background:var(--ink)"></i>Повторяющееся</span><span style="display:flex;align-items:center;gap:6px"><i class="ring" style="border-color:var(--ink)"></i>Разовое</span></div>';
+
+function subjIcon(s,size){
+  if(s.iconAsset)return '<img src="'+imgUrl(s.iconAsset)+'" alt="">';
+  return ico(s.icon||'book',PACK);
+}
+function nextLesson(sid){
+  const t=today();return st.data.lessons.filter(l=>l.subjectId===sid&&l.date>=t).sort((a,b)=>a.date.localeCompare(b.date))[0];
+}
+function vLessons(){
+  if(st.subj){const s=st.data.subjects.find(x=>x.id===st.subj);if(s)return vSubject(s);st.subj=null}
+  const list=[...st.data.subjects].sort((a,b)=>(a.order??0)-(b.order??0));
+  return '<div class="top"><h1>Уроки</h1><button class="ib" data-act="new-subj" aria-label="Добавить предмет">'+ico('plus')+'</button></div><div class="stack"><div class="cap">Предметы</div>'+
+  (list.length?list.map(s=>{const n=nextLesson(s.id),c=s.color||P[3];return '<button class="subj" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="open-subj" data-id="'+s.id+'" data-hold="edit-subj"><span class="ico">'+subjIcon(s)+'</span><span class="txt"><span class="nm">'+esc(s.name)+'</span><span class="sub">'+(n?esc(dShort(n.date)+' · '+n.topic):'Уроков впереди нет')+'</span></span>'+ico('right')+'</button>'}).join('')+'<div class="note">Удерживайте предмет, чтобы изменить его</div>'
+  :'<div class="empty">Добавьте первый предмет кнопкой «+»: например, математику или физику.</div>')+'</div>';
+}
+function weekLabel(d){const ws=weekStart(parse(d)),we=addD(ws,6);return 'Неделя '+ws.getDate()+(ws.getMonth()!==we.getMonth()?' '+MONG[ws.getMonth()]:'')+'–'+we.getDate()+' '+MONG[we.getMonth()]}
+function vSubject(s){
+  const t=today(),c=s.color||P[3];
+  let ls=st.data.lessons.filter(l=>l.subjectId===s.id);
+  ls=st.tab==='ahead'?ls.filter(l=>l.date>=t).sort((a,b)=>a.date.localeCompare(b.date)):ls.filter(l=>l.date<t).sort((a,b)=>b.date.localeCompare(a.date));
+  let h='',wk='';
+  ls.forEach((l,i)=>{const w=weekLabel(l.date);if(w!==wk){h+='<div class="cap" style="padding-top:4px">'+esc(w)+'</div>';wk=w}
+    const first=st.tab==='ahead'&&i===0;const bg=first?c:'var(--card)';const fg=first?onC(c):'var(--ink)';
+    h+='<button class="lesson" style="background:'+bg+';color:'+fg+(first?'':';border:1px solid var(--line)')+'" data-act="edit-les" data-id="'+l.id+'"><span class="d">'+dShort(l.date)+'<br>'+dNum(l.date)+(l.from?'<br>'+esc(l.from):'')+'</span><span style="min-width:0"><span class="tp" style="display:block">'+esc(l.topic)+'</span>'+(l.material?'<span class="mt" style="display:block">'+esc(l.material)+'</span>':'')+(l.stop?'<span class="stp">'+ico('flag')+'Стоп: '+esc(l.stop)+'</span>':'')+'</span></button>'});
+  return '<div class="top"><button class="ib" data-act="back" aria-label="К предметам">'+ico('left')+'</button><h1>'+esc(s.name)+'</h1><button class="ib" data-act="edit-subj" data-id="'+s.id+'" aria-label="Изменить предмет">'+ico('pencil')+'</button><button class="ib" data-act="new-les" aria-label="Добавить урок">'+ico('plus')+'</button></div>'+
+  '<div class="stack"><div class="seg">'+[['ahead','Впереди'],['done','Пройдено']].map(x=>'<button class="'+(st.tab===x[0]?'on':'')+'" data-act="tab" data-t="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+
+  (h||'<div class="empty">'+(st.tab==='ahead'?'Впереди пусто. Добавьте урок кнопкой «+».':'Здесь появятся уроки, дата которых уже прошла.')+'</div>')+'</div>';
+}
+function vMoney(){
+  const [y,m]=st.month.split('-').map(Number);
+  const ex=st.data.expenses.filter(e=>(e.date||'').slice(0,7)===st.month).sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0));
+  const tot=ex.reduce((s,e)=>s+(+e.amount||0),0);
+  const by=Object.fromEntries(CATS.map(c=>[c[0],0]));ex.forEach(e=>{by[e.category in by?e.category:'other']+=(+e.amount||0)});
+  const mx=Math.max(1,...Object.values(by));
+  return '<div class="top"><button class="ib" data-act="mprev" aria-label="Предыдущий месяц">'+ico('left')+'</button><h1 style="text-align:center">'+MON[m-1]+' '+y+'</h1><button class="ib" data-act="mnext" aria-label="Следующий месяц">'+ico('right')+'</button><button class="ib" data-act="new-exp" aria-label="Добавить трату">'+ico('plus')+'</button></div>'+
+  '<div class="stack"><div class="total"><div class="cap">Потрачено за месяц</div><div class="v">'+money(tot)+'</div></div>'+
+  '<div class="panel stack" style="gap:9px">'+CATS.map(c=>'<div class="cat"><span>'+c[1]+'</span><span class="bar"><i style="width:'+Math.round(by[c[0]]/mx*100)+'%;background:'+c[2]+'"></i></span><span class="num">'+Math.round(by[c[0]]).toLocaleString('ru-RU')+'</span></div>').join('')+'</div>'+
+  (ex.length?'<div class="panel" style="padding:4px 12px">'+ex.map(e=>{const c=CATS.find(x=>x[0]===e.category)||CATS[4];return '<button class="tx" data-act="edit-exp" data-id="'+e.id+'"><span style="min-width:0"><span style="display:block;overflow-wrap:anywhere">'+esc(e.title||c[1])+'</span><span class="cap">'+c[1]+' · '+parse(e.date).getDate()+' '+MONG[parse(e.date).getMonth()]+'</span></span><span class="a">−'+money(e.amount)+'</span></button>'}).join('')+'</div>'
+  :'<div class="empty">В этом месяце трат пока нет. Нажмите «+», чтобы записать первую.</div>')+'</div>';
+}
+function vSettings(){
+  const c=st.cfg,mode=st.bgTab||c.bgMode||'color';
+  const prev=mode==='photo'?(c.bgAsset?'background-image:url('+imgUrl(c.bgAsset)+')':''):'background:'+esc(c.bgColor||'#fff');
+  return '<div class="top"><button class="ib" data-act="view" data-v="plan" aria-label="Назад">'+ico('left')+'</button><h1>Оформление</h1></div><div class="stack"><div class="cap">Фон приложения</div>'+
+  '<div class="seg">'+[['photo','Фото'],['color','Цвет']].map(x=>'<button class="'+(mode===x[0]?'on':'')+'" data-act="bgtab" data-t="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+
+  (mode==='photo'?
+   '<div class="bgprev" style="'+prev+'">'+(c.bgAsset?'':'<span class="cap">Фото ещё не выбрано</span>')+'</div>'+
+   (st.assets?'<label class="btn ghost" style="display:flex;gap:8px;justify-content:center;align-items:center" for="bgfile">'+ico('upload').replace('class="i"','class="i" width="20" height="20"')+(c.bgAsset?'Выбрать другое фото':'Загрузить фото')+'</label><input id="bgfile" type="file" accept="image/*" hidden>':'<div class="note">Загрузка фото доступна только в режиме редактирования.</div>')+
+   (c.bgAsset?'<button class="btn" data-act="bg-use-photo">'+(c.bgMode==='photo'?'Фото уже стоит на фоне':'Поставить это фото на фон')+'</button>':'')+
+   '<div class="f"><label for="op">Прозрачность карточек поверх фона · <span id="opv">'+Math.round(c.op*100)+'%</span></label><input class="range" id="op" type="range" min="40" max="100" step="5" value="'+Math.round(c.op*100)+'"></div>'
+  :'<div class="bgprev" style="'+prev+';height:120px"><span class="mono" style="color:'+onC(c.bgColor||'#ffffff')+'">'+esc((c.bgColor||'#FFFFFF').toUpperCase())+'</span></div>'+
+   picker('bg',st.bgDraft||c.bgColor||'#FFFFFF',['#FFFFFF','#F4F2EE',...P])+'<button class="btn pri" data-act="bg-use-color">Применить цвет</button>')+
+  '<div class="cap" style="padding-top:14px;border-top:1px solid var(--line);margin-top:8px">Резервная копия</div>'+
+  '<div class="note" style="text-align:left">Все записи хранятся только на этом телефоне. Раз в неделю сохраняйте копию в «Файлы» или iCloud.</div>'+
+  '<button class="btn ghost" data-act="export">Сохранить копию</button>'+
+  '<label class="btn" for="importfile" style="border:1px dashed var(--ink)">Загрузить копию (заменит текущие данные)</label><input id="importfile" type="file" accept=".json,application/json" hidden>'+
+  '</div>';
+}
+
+function picker(id,val,list){
+  list=list||P;
+  return '<div class="f"><label>Цвет</label><div class="sw" id="'+id+'-sw">'+list.map(c=>'<button type="button" data-act="pick" data-p="'+id+'" data-c="'+c+'" class="'+(c.toLowerCase()===val.toLowerCase()?'on':'')+'" style="background:'+c+'" aria-label="Цвет '+c+'"></button>').join('')+'<input type="color" id="'+id+'-native" value="'+esc(val.toLowerCase())+'" aria-label="Свой цвет"></div></div>'+
+  '<div class="row2 f"><div><label for="'+id+'-hex">HEX</label><input id="'+id+'-hex" class="mono" value="'+esc(val.toUpperCase())+'" maxlength="7" autocomplete="off"></div><div class="row3"><div><label for="'+id+'-r">R</label><input id="'+id+'-r" inputmode="numeric" class="mono"></div><div><label for="'+id+'-g">G</label><input id="'+id+'-g" inputmode="numeric" class="mono"></div><div><label for="'+id+'-b">B</label><input id="'+id+'-b" inputmode="numeric" class="mono"></div></div></div>';
+}
+function setColor(id,h,from){
+  if(!okHex(h))return;h=h.toUpperCase();
+  if(sheet&&id!=='bg')sheet.color=h; if(id==='bg')st.bgDraft=h;
+  const n=parseInt(h.slice(1),16),$=x=>document.getElementById(id+'-'+x);
+  if(from!=='hex'&&$('hex'))$('hex').value=h;
+  if(from!=='rgb'){$('r')&&($('r').value=(n>>16)&255);$('g')&&($('g').value=(n>>8)&255);$('b')&&($('b').value=n&255)}
+  if(from!=='native'&&$('native'))$('native').value=h.toLowerCase();
+  document.querySelectorAll('#'+id+'-sw button').forEach(b=>b.classList.toggle('on',b.dataset.c.toUpperCase()===h));
+  const pv=document.getElementById('pv');if(pv&&id!=='bg'){pv.style.background=sheet.kind==='ev'&&sheet.type==='once'?'#fff':h;pv.style.color=sheet.kind==='ev'&&sheet.type==='once'?'var(--ink)':onC(h);pv.style.borderColor=h}
+  if(id==='bg'){const bp=document.querySelector('.bgprev');if(bp){bp.style.background=h;const sp=bp.querySelector('span');if(sp){sp.textContent=h;sp.style.color=onC(h)}}}
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const ready=st.loaded.events&&st.loaded.subjects&&st.loaded.lessons&&st.loaded.expenses||st.offline;
+  let h=st.view==='plan'?vPlan():st.view==='lessons'?vLessons():st.view==='money'?vMoney():vSettings();
+  if(!ready)h+='<div class="note" style="margin-top:10px">Загружаю данные…</div>';
+  if(st.offline)h='<div class="note" style="margin:10px 0">Память телефона недоступна, изменения не сохранятся. Не открывайте приложение в режиме «Частный доступ».</div>'+h;
+  app.innerHTML=h;
+  if(st.view==='settings'&&(st.bgTab||st.cfg.bgMode)==='color')setColor('bg',st.bgDraft||st.cfg.bgColor||'#FFFFFF','init');
+  [['plan','calendar','План'],['lessons','school','Уроки'],['money','wallet','Траты']].forEach(([v,i,t])=>{const b=document.getElementById('nav-'+v);b.innerHTML=ico(i)+t;b.classList.toggle('on',st.view===v||(v==='plan'&&st.view==='settings'));b.setAttribute('aria-current',st.view===v?'page':'false')});
+  applyBg();
+}
+function applyBg(){
+  const c=st.cfg;document.documentElement.style.setProperty('--op',c.bgMode==='photo'||c.bgMode==='color'&&c.bgColor&&c.bgColor.toUpperCase()!=='#FFFFFF'?c.op:1);
+  if(c.bgMode==='photo'&&c.bgAsset){document.body.style.backgroundImage='url('+imgUrl(c.bgAsset)+')';document.body.style.backgroundColor='#fff'}
+  else{document.body.style.backgroundImage='none';document.body.style.backgroundColor=c.bgColor||'#fff'}
+}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
+
+/* ---------- sheets ---------- */
+function openSheet(s,html){sheet=s;document.getElementById('layer').innerHTML='<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true"><div class="in">'+html+'</div></div>';if(s.color)setColor(s.pid||'c',s.color,'init');const f=document.querySelector('.sheet input:not([type=color])');if(f&&!s.id)setTimeout(()=>f.focus(),50)}
+function closeSheet(){sheet=null;document.getElementById('layer').innerHTML=''}
+const head=t=>'<div style="display:flex;align-items:center;gap:10px"><h2>'+t+'</h2><button class="ib" data-act="close" aria-label="Закрыть">'+ico('x')+'</button></div>';
+const delBtn=k=>'<button class="btn del" data-act="del" id="delbtn">'+k+'</button>';
+
+function evSheet(e){
+  const n=!e;e=e||{type:'recurring',title:'',days:[m0(parse(st.sel))],start:st.sel,until:'',date:st.sel,from:'',to:'',color:P[Math.floor(Math.random()*P.length)]};
+  const s={kind:'ev',id:e.id,type:e.type,days:[...(e.days||[])],color:e.color,pid:'c'};
+  openSheet(s,head(n?'Новое событие':'Событие')+
+   '<div class="f"><label for="ev-title">Название</label><input id="ev-title" value="'+esc(e.title)+'" placeholder="Зал"></div>'+
+   '<div class="seg">'+[['recurring','Повторяющееся'],['once','Разовое']].map(x=>'<button type="button" class="'+(e.type===x[0]?'on':'')+'" data-act="evtype" data-t="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+
+   '<div id="ev-rec" '+(e.type==='once'?'hidden':'')+' class="stack"><div class="f"><label>Дни повтора</label><div class="days">'+DOW.map((d,i)=>'<button type="button" data-act="day" data-i="'+i+'" class="'+(s.days.includes(i)?'on':'')+'">'+d+'</button>').join('')+'</div></div>'+
+   '<div class="row2 f"><div><label for="ev-start">Начиная с</label><input id="ev-start" type="date" value="'+esc(e.start||st.sel)+'"></div><div><label for="ev-until">Повторять до</label><input id="ev-until" type="date" value="'+esc(e.until||'')+'"></div></div><div class="cap" style="margin-top:-6px">Пустое поле «до» — повторять без конца</div></div>'+
+   '<div id="ev-once" '+(e.type==='once'?'':'hidden')+' class="f"><label for="ev-date">Дата</label><input id="ev-date" type="date" value="'+esc(e.date||st.sel)+'"></div>'+
+   '<div class="row2 f"><div><label for="ev-from">Начало</label><input id="ev-from" type="time" value="'+esc(e.from||'')+'"></div><div><label for="ev-to">Конец</label><input id="ev-to" type="time" value="'+esc(e.to||'')+'"></div></div>'+
+   picker('c',e.color)+
+   '<div class="chip preview" id="pv" style="border:1.5px '+(e.type==='once'?'dashed':'solid')+' '+esc(e.color)+'">Так будет выглядеть событие</div>'+
+   '<button class="btn pri" data-act="save-ev">Сохранить</button>'+(n?'':delBtn('Удалить событие')));
+}
+function subjSheet(x){
+  const n=!x;x=x||{name:'',icon:'book',iconAsset:null,color:P[Math.floor(Math.random()*P.length)]};
+  const s={kind:'subj',id:x.id,icon:x.icon||'book',iconAsset:x.iconAsset||null,color:x.color,pid:'c',itab:x.iconAsset?'photo':'pack'};
+  openSheet(s,head(n?'Новый предмет':'Предмет')+
+   '<div style="display:flex;gap:10px;align-items:flex-end"><div class="thumb" id="sthumb" style="background:'+esc(x.color)+';color:'+onC(x.color)+'">'+subjIcon(s)+'</div><div class="f" style="flex:1"><label for="s-name">Название</label><input id="s-name" value="'+esc(x.name)+'" placeholder="Математика"></div></div>'+
+   '<div class="f"><label>Стикер</label><div class="seg">'+[['pack','Набор'],['photo','Своё фото']].map(t=>'<button type="button" class="'+(s.itab===t[0]?'on':'')+'" data-act="itab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div></div>'+
+   '<div id="ipack" '+(s.itab==='pack'?'':'hidden')+' class="pack">'+Object.keys(PACK).map(k=>'<button type="button" data-act="icon" data-k="'+k+'" class="'+(!s.iconAsset&&s.icon===k?'on':'')+'" aria-label="Стикер '+k+'">'+ico(k,PACK)+'</button>').join('')+'</div>'+
+   '<div id="iphoto" '+(s.itab==='photo'?'':'hidden')+' class="stack">'+(st.assets?'<label class="btn ghost" for="ifile" style="display:flex;gap:8px;justify-content:center;align-items:center">'+ico('photo').replace('class="i"','class="i" width="20" height="20"')+'Выбрать фото из галереи</label><input id="ifile" type="file" accept="image/*" hidden><div class="cap">Фото обрежется в квадрат и станет иконкой предмета.</div>':'<div class="note">Загрузка фото доступна только в режиме редактирования.</div>')+'</div>'+
+   picker('c',x.color)+
+   '<button class="btn pri" data-act="save-subj">Сохранить</button>'+(n?'':delBtn('Удалить предмет и его уроки')));
+}
+function lesSheet(l){
+  const n=!l;l=l||{subjectId:st.subj,topic:'',material:'',stop:'',date:today(),from:'',to:''};
+  openSheet({kind:'les',id:l.id},head(n?'Новый урок':'Урок')+
+   '<div class="f"><label for="l-subj">Предмет</label><select id="l-subj">'+st.data.subjects.map(s=>'<option value="'+s.id+'"'+(s.id===l.subjectId?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div>'+
+   '<div class="f"><label for="l-topic">Тема</label><input id="l-topic" value="'+esc(l.topic)+'" placeholder="Определитель"></div>'+
+   '<div class="f"><label for="l-mat">Материал</label><input id="l-mat" value="'+esc(l.material)+'" placeholder="3B1B, эпизод 6"></div>'+
+   '<div class="f"><label for="l-stop">Точка остановки</label><input id="l-stop" value="'+esc(l.stop)+'" placeholder="10 задач решено"></div>'+
+   '<div class="row2 f"><div><label for="l-date">Дата</label><input id="l-date" type="date" value="'+esc(l.date)+'"></div><div class="row2"><div><label for="l-from">С</label><input id="l-from" type="time" value="'+esc(l.from||'')+'"></div><div><label for="l-to">До</label><input id="l-to" type="time" value="'+esc(l.to||'')+'"></div></div></div>'+
+   '<button class="btn pri" data-act="save-les">Сохранить</button>'+(n?'':delBtn('Удалить урок')));
+}
+function expSheet(e){
+  const n=!e;e=e||{title:'',amount:'',category:'food',date:today()};
+  openSheet({kind:'exp',id:e.id,cat:e.category},head(n?'Новая трата':'Трата')+
+   '<div class="f"><label for="x-amount">Сумма, ₸</label><input id="x-amount" inputmode="decimal" class="mono" value="'+esc(e.amount)+'" placeholder="4850" style="font-size:22px"></div>'+
+   '<div class="f"><label for="x-title">Где или что</label><input id="x-title" value="'+esc(e.title)+'" placeholder="Magnum"></div>'+
+   '<div class="f"><label>Категория</label><div class="sw" style="gap:6px">'+CATS.map(c=>'<button type="button" data-act="cat" data-c="'+c[0]+'" class="'+(e.category===c[0]?'on':'')+'" style="width:auto;height:auto;padding:8px 11px;background:'+c[2]+';color:'+onC(c[2])+';font-size:14px">'+c[1]+'</button>').join('')+'</div></div>'+
+   '<div class="f"><label for="x-date">Дата</label><input id="x-date" type="date" value="'+esc(e.date)+'"></div>'+
+   '<button class="btn pri" data-act="save-exp">Сохранить</button>'+(n?'':delBtn('Удалить трату')));
+}
+
+/* ---------- storage ---------- */
+const IDB=(()=>{let p;
+  const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('moy-ritm',1);r.onupgradeneeded=()=>{r.result.createObjectStore('kv');r.result.createObjectStore('files')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+  const tx=async(store,mode,fn)=>{const db=await open();return new Promise((res,rej)=>{const t=db.transaction(store,mode);const r=fn(t.objectStore(store));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})};
+  return{get:(n,k)=>tx(n,'readonly',s=>s.get(k)),set:(n,k,v)=>tx(n,'readwrite',s=>s.put(v,k)),keys:n=>tx(n,'readonly',s=>s.getAllKeys())};
+})();
+const URLS={};const imgUrl=id=>URLS[id]||'';
+async function persist(){try{await IDB.set('kv','state',{v:1,data:st.data,cfg:st.cfg})}catch(e){toast('Не удалось сохранить на телефоне')}}
+async function put(col,id,obj){const arr=st.data[col];const i=arr.findIndex(x=>x.id===id);const o={...obj,id};i<0?arr.push(o):arr[i]=o;render();await persist()}
+async function del(col,id){st.data[col]=st.data[col].filter(x=>x.id!==id);render();await persist()}
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const val=id=>(document.getElementById(id)?.value||'').trim();
+
+async function save(){
+  const s=sheet;if(!s)return;
+  if(s.kind==='ev'){
+    const title=val('ev-title');if(!title){toast('Введите название');return}
+    const o={title,type:s.type,color:s.color,from:val('ev-from'),to:val('ev-to')};
+    if(s.type==='once'){o.date=val('ev-date')||st.sel}else{if(!s.days.length){toast('Выберите хотя бы один день');return}o.days=[...s.days].sort();o.start=val('ev-start')||today();o.until=val('ev-until')||''}
+    await put('events',s.id||newId('events'),o);
+  }else if(s.kind==='subj'){
+    const name=val('s-name');if(!name){toast('Введите название');return}
+    const ex=st.data.subjects.find(x=>x.id===s.id);
+    await put('subjects',s.id||newId('subjects'),{name,icon:s.icon,iconAsset:s.itab==='photo'?s.iconAsset:null,color:s.color,order:ex?.order??st.data.subjects.length});
+  }else if(s.kind==='les'){
+    const topic=val('l-topic');if(!topic){toast('Введите тему');return}
+    await put('lessons',s.id||newId('lessons'),{subjectId:val('l-subj'),topic,material:val('l-mat'),stop:val('l-stop'),date:val('l-date')||today(),from:val('l-from'),to:val('l-to')});
+  }else if(s.kind==='exp'){
+    const amount=parseFloat(val('x-amount').replace(/\s/g,'').replace(',','.'));if(!(amount>0)){toast('Введите сумму');return}
+    const ex=st.data.expenses.find(x=>x.id===s.id);
+    await put('expenses',s.id||newId('expenses'),{title:val('x-title'),amount,category:s.cat,date:val('x-date')||today(),ts:ex?.ts||Date.now()});
+  }
+  closeSheet();toast('Сохранено');
+}
+async function remove(){
+  const s=sheet,b=document.getElementById('delbtn');
+  if(!s.confirm){s.confirm=1;b.textContent='Нажмите ещё раз, чтобы удалить';return}
+  const map={ev:'events',subj:'subjects',les:'lessons',exp:'expenses'};
+  if(s.kind==='subj'){for(const l of st.data.lessons.filter(l=>l.subjectId===s.id))await del('lessons',l.id);st.subj=null}
+  await del(map[s.kind],s.id);closeSheet();toast('Удалено');
+}
+async function shrink(file){
+  try{const bmp=await createImageBitmap(file);const k=Math.min(1,1600/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.86))}catch(e){return file}
+}
+async function uploadImg(file,cb){
+  if(!file)return;
+  try{const blob=await shrink(file);const id=newId();await IDB.set('files',id,blob);URLS[id]=URL.createObjectURL(blob);cb(id)}
+  catch(e){toast('Не удалось сохранить фото')}
+}
+async function saveCfg(patch,quiet){Object.assign(st.cfg,patch);quiet?applyBg():render();await persist()}
+const toDataURL=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
+async function exportBackup(){
+  try{
+    const files={};for(const k of await IDB.keys('files')){const b=await IDB.get('files',k);if(b)files[k]=await toDataURL(b)}
+    const json=JSON.stringify({app:'moy-ritm',v:1,date:today(),data:st.data,cfg:st.cfg,files});
+    const file=new File([json],'ravens-priorities-'+today()+'.json',{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]})}catch(e){}return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+  }catch(e){toast('Не удалось сохранить копию')}
+}
+async function importBackup(file){
+  if(!file)return;
+  try{
+    const j=JSON.parse(await file.text());if(j.app!=='moy-ritm')throw 0;
+    for(const[k,d]of Object.entries(j.files||{})){const b=await (await fetch(d)).blob();await IDB.set('files',k,b);URLS[k]=URL.createObjectURL(b)}
+    st.data={events:[],subjects:[],lessons:[],expenses:[],...(j.data||{})};Object.assign(st.cfg,j.cfg||{});
+    await persist();render();toast('Копия загружена');
+  }catch(e){toast('Это не файл копии Raven's Priorities')}
+}
+
+/* ---------- events ---------- */
+let hold=null,held=false;
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-hold]');if(!b)return;held=false;hold=setTimeout(()=>{held=true;const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x)},550)});
+['pointerup','pointercancel','pointerleave'].forEach(t=>document.addEventListener(t,()=>clearTimeout(hold)));
+document.addEventListener('contextmenu',e=>{if(e.target.closest('[data-hold]'))e.preventDefault()});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(held&&b.dataset.hold){held=false;return}
+  const c=parse(st.cur);
+  switch(a){
+   case 'view':{const was=st.view;st.view=b.dataset.v;if(st.view==='lessons'&&was==='lessons')st.subj=null;}window.scrollTo(0,0);render();break;
+   case 'mode':st.mode=b.dataset.m;st.cur=st.sel;render();break;
+   case 'sel':st.sel=b.dataset.d;if(st.mode!=='week')st.cur=st.mode==='month'?st.sel:st.cur;render();break;
+   case 'prev':case 'next':{const k=a==='prev'?-1:1;if(st.mode==='week'){st.sel=ymd(addD(parse(st.sel),7*k));st.cur=st.sel}else{const n=new Date(c.getFullYear(),c.getMonth()+k*(st.mode==='q'?3:1),1);st.cur=ymd(n);st.sel=ymd(n)}render();break}
+   case 'settings':st.view='settings';st.bgTab=st.cfg.bgMode;st.bgDraft=st.cfg.bgColor;render();setColor('bg',st.cfg.bgColor||'#FFFFFF','init');break;
+   case 'bgtab':st.bgTab=b.dataset.t;render();if(b.dataset.t==='color')setColor('bg',st.bgDraft||st.cfg.bgColor||'#FFFFFF','init');break;
+   case 'bg-use-color':saveCfg({bgMode:'color',bgColor:st.bgDraft||st.cfg.bgColor});toast('Фон обновлён');break;
+   case 'bg-use-photo':saveCfg({bgMode:'photo'});break;
+   case 'new-ev':evSheet();break;
+   case 'edit-ev':evSheet(st.data.events.find(x=>x.id===b.dataset.id));break;
+   case 'evtype':{sheet.type=b.dataset.t;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ev-rec').hidden=sheet.type==='once';document.getElementById('ev-once').hidden=sheet.type!=='once';const pv=document.getElementById('pv');pv.style.borderStyle=sheet.type==='once'?'dashed':'solid';setColor('c',sheet.color,'init');break}
+   case 'day':{const i=+b.dataset.i;const ix=sheet.days.indexOf(i);ix<0?sheet.days.push(i):sheet.days.splice(ix,1);b.classList.toggle('on');break}
+   case 'pick':setColor(b.dataset.p,b.dataset.c);if(sheet&&sheet.kind==='subj')updThumb();break;
+   case 'open-subj':st.subj=b.dataset.id;st.tab='ahead';window.scrollTo(0,0);render();break;
+   case 'back':st.subj=null;render();break;
+   case 'tab':st.tab=b.dataset.t;render();break;
+   case 'new-subj':subjSheet();break;
+   case 'edit-subj':{const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x);break}
+   case 'itab':sheet.itab=b.dataset.t;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ipack').hidden=sheet.itab!=='pack';document.getElementById('iphoto').hidden=sheet.itab!=='photo';updThumb();break;
+   case 'icon':sheet.icon=b.dataset.k;sheet.itab='pack';document.querySelectorAll('#ipack button').forEach(x=>x.classList.toggle('on',x===b));updThumb();break;
+   case 'new-les':if(!st.data.subjects.length){toast('Сначала добавьте предмет');break}lesSheet();break;
+   case 'edit-les':lesSheet(st.data.lessons.find(x=>x.id===b.dataset.id));break;
+   case 'new-exp':expSheet();break;
+   case 'edit-exp':expSheet(st.data.expenses.find(x=>x.id===b.dataset.id));break;
+   case 'cat':sheet.cat=b.dataset.c;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));break;
+   case 'mprev':case 'mnext':{const[y,m]=st.month.split('-').map(Number);const d=new Date(y,m-1+(a==='mprev'?-1:1),1);st.month=ymd(d).slice(0,7);render();break}
+   case 'save-ev':case 'save-subj':case 'save-les':case 'save-exp':save();break;
+   case 'del':remove();break;
+   case 'close':closeSheet();break;
+   case 'export':exportBackup();break;
+  }
+});
+function updThumb(){const t=document.getElementById('sthumb');if(!t||!sheet)return;t.style.background=sheet.color;t.style.color=onC(sheet.color);t.innerHTML=subjIcon({icon:sheet.icon,iconAsset:sheet.itab==='photo'?sheet.iconAsset:null})}
+document.addEventListener('input',e=>{
+  const t=e.target,id=t.id||'';
+  const m=id.match(/^(c|bg)-(hex|r|g|b|native)$/);
+  if(m){const p=m[1],k=m[2];
+    if(k==='hex'){let v=t.value.trim();if(v&&v[0]!=='#')v='#'+v;if(okHex(v))setColor(p,v,'hex')}
+    else if(k==='native')setColor(p,t.value,'native');
+    else{const g=x=>Math.max(0,Math.min(255,parseInt(document.getElementById(p+'-'+x).value)||0));setColor(p,'#'+[g('r'),g('g'),g('b')].map(n=>n.toString(16).padStart(2,'0')).join(''),'rgb')}
+    if(sheet&&sheet.kind==='subj')updThumb();
+  }
+  if(id==='op'){document.getElementById('opv').textContent=t.value+'%';document.documentElement.style.setProperty('--op',t.value/100);clearTimeout(st.opT);st.opT=setTimeout(()=>saveCfg({op:t.value/100},1),400)}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='bgfile')uploadImg(t.files[0],id=>{saveCfg({bgAsset:id,bgMode:'photo'});toast('Фон обновлён')});
+  if(t.id==='importfile'){importBackup(t.files[0]);t.value=''}
+  if(t.id==='ifile')uploadImg(t.files[0],id=>{if(!sheet)return;sheet.iconAsset=id;sheet.itab='photo';updThumb();toast('Иконка загружена')});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet)closeSheet()});
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  try{
+    const saved=await IDB.get('kv','state');
+    if(saved){Object.assign(st.data,saved.data||{});Object.assign(st.cfg,saved.cfg||{})}
+    for(const k of await IDB.keys('files')){const b=await IDB.get('files',k);if(b)URLS[k]=URL.createObjectURL(b)}
+  }catch(e){st.offline=true}
+  st.assets=true;['events','subjects','lessons','expenses'].forEach(c=>st.loaded[c]=true);render();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+})();
+</script>
+
+</body>
+</html>
