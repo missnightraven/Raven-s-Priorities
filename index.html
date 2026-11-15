@@ -200,7 +200,9 @@ const dShort=s=>{const d=parse(s);return DOW[m0(d)]};
 const dNum=s=>{const d=parse(s);return pad(d.getDate())+'.'+pad(d.getMonth()+1)};
 
 const st={view:'plan',mode:'month',sel:today(),cur:today(),subj:null,tab:'ahead',month:today().slice(0,7),
-  data:{events:[],subjects:[],lessons:[],expenses:[]},cfg:{bgMode:'color',bgColor:'#FFFFFF',bgAsset:null,op:.85},loaded:{},db:null,assets:null};
+  data:{events:[],subjects:[],lessons:[],expenses:[]},cfg:{bgMode:'color',bgColor:'#FFFFFF',bgAsset:null,op:.85},loaded:{},db:null,assets:null,
+  tomb:{events:{},subjects:{},lessons:{},expenses:{}},
+  sync:{owner:'missnightraven',repo:'priorities-data',token:'',sha:null,last:0},syncState:'off',syncMsg:''};
 let sheet=null;
 
 function occurs(e,d){
@@ -301,8 +303,9 @@ function vSettings(){
    '<div class="f"><label for="op">Прозрачность карточек поверх фона · <span id="opv">'+Math.round(c.op*100)+'%</span></label><input class="range" id="op" type="range" min="40" max="100" step="5" value="'+Math.round(c.op*100)+'"></div>'
   :'<div class="bgprev" style="'+prev+';height:120px"><span class="mono" style="color:'+onC(c.bgColor||'#ffffff')+'">'+esc((c.bgColor||'#FFFFFF').toUpperCase())+'</span></div>'+
    picker('bg',st.bgDraft||c.bgColor||'#FFFFFF',['#FFFFFF','#F4F2EE',...P])+'<button class="btn pri" data-act="bg-use-color">Применить цвет</button>')+
+  syncBlock()+
   '<div class="cap" style="padding-top:14px;border-top:1px solid var(--line);margin-top:8px">Резервная копия</div>'+
-  '<div class="note" style="text-align:left">Все записи хранятся только на этом телефоне. Раз в неделю сохраняйте копию в «Файлы» или iCloud.</div>'+
+  '<div class="note" style="text-align:left">'+(st.sync.token?'Данные синхронизируются через GitHub. Копия в «Файлах» нужна на всякий случай.':'Все записи хранятся только на этом устройстве. Раз в неделю сохраняйте копию в «Файлы» или iCloud.')+'</div>'+
   '<button class="btn ghost" data-act="export">Сохранить копию</button>'+
   '<label class="btn" for="importfile" style="border:1px dashed var(--ink)">Загрузить копию (заменит текущие данные)</label><input id="importfile" type="file" accept=".json,application/json" hidden>'+
   '</div>';
@@ -401,9 +404,9 @@ const IDB=(()=>{let p;
   return{get:(n,k)=>tx(n,'readonly',s=>s.get(k)),set:(n,k,v)=>tx(n,'readwrite',s=>s.put(v,k)),keys:n=>tx(n,'readonly',s=>s.getAllKeys())};
 })();
 const URLS={};const imgUrl=id=>URLS[id]||'';
-async function persist(){try{await IDB.set('kv','state',{v:1,data:st.data,cfg:st.cfg})}catch(e){toast('Не удалось сохранить на телефоне')}}
-async function put(col,id,obj){const arr=st.data[col];const i=arr.findIndex(x=>x.id===id);const o={...obj,id};i<0?arr.push(o):arr[i]=o;render();await persist()}
-async function del(col,id){st.data[col]=st.data[col].filter(x=>x.id!==id);render();await persist()}
+async function persist(){try{await IDB.set('kv','state',{v:2,data:st.data,tomb:st.tomb,cfg:st.cfg})}catch(e){toast('Не удалось сохранить на телефоне')}}
+async function put(col,id,obj){const arr=st.data[col];const i=arr.findIndex(x=>x.id===id);const o={...obj,id,u:Date.now()};i<0?arr.push(o):arr[i]=o;render();await persist();scheduleSync()}
+async function del(col,id){st.data[col]=st.data[col].filter(x=>x.id!==id);st.tomb[col][id]=Date.now();render();await persist();scheduleSync()}
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const val=id=>(document.getElementById(id)?.value||'').trim();
 
@@ -460,9 +463,87 @@ async function importBackup(file){
     const j=JSON.parse(await file.text());if(j.app!=='moy-ritm')throw 0;
     for(const[k,d]of Object.entries(j.files||{})){const b=await (await fetch(d)).blob();await IDB.set('files',k,b);URLS[k]=URL.createObjectURL(b)}
     st.data={events:[],subjects:[],lessons:[],expenses:[],...(j.data||{})};Object.assign(st.cfg,j.cfg||{});
-    await persist();render();toast('Копия загружена');
+    const now=Date.now();SYNC_COLS.forEach(c=>st.data[c]=(st.data[c]||[]).map(r=>({...r,u:now})));
+    await persist();render();toast('Копия загружена');scheduleSync();
   }catch(e){toast('Это не файл копии Raven\u2019s Priorities')}
 }
+
+/* ---------- sync with GitHub ----------
+   data.json lives in a private repo. Every record carries u (last change time);
+   deleted records leave a tombstone {id: time} so the deletion reaches other devices.
+   GET  -> merge remote into local -> PUT back with the sha we read (409 = someone wrote first, retry). */
+const SYNC_COLS=['events','subjects','lessons','expenses'];
+const ghUrl=()=>'https://api.github.com/repos/'+encodeURIComponent(st.sync.owner)+'/'+encodeURIComponent(st.sync.repo)+'/contents/data.json';
+const ghHeaders=()=>({Authorization:'Bearer '+st.sync.token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
+const b64enc=str=>{const b=new TextEncoder().encode(str);let bin='';for(let i=0;i<b.length;i+=0x8000)bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(bin)};
+const b64dec=str=>new TextDecoder().decode(Uint8Array.from(atob(str.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+async function saveSyncCfg(){try{await IDB.set('kv','sync',{...st.sync})}catch(e){}}
+function merge(L,R){
+  const out={data:{},tomb:{}},cut=Date.now()-90*864e5;
+  for(const c of SYNC_COLS){
+    const t={...((R.tomb||{})[c]||{})};
+    for(const[k,v]of Object.entries((L.tomb||{})[c]||{}))if(!(t[k]>=v))t[k]=v;
+    const m=new Map();
+    for(const r of[...((R.data||{})[c]||[]),...((L.data||{})[c]||[])]){const o=m.get(r.id);if(!o||(r.u||0)>=(o.u||0))m.set(r.id,r)}
+    out.data[c]=[...m.values()].filter(r=>!(t[r.id]>=(r.u||0)));
+    for(const k in t)if(t[k]<cut)delete t[k];
+    out.tomb[c]=t;
+  }
+  return out;
+}
+const norm=x=>JSON.stringify(SYNC_COLS.map(c=>[[...((x.data||{})[c]||[])].sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0),Object.entries((x.tomb||{})[c]||{}).sort()]));
+const httpErr=code=>({msg:code===401?'Ключ не подходит или истёк. Создайте новый и подключите заново.':code===403?'У ключа нет права записи. Нужно Contents: Read and write.':code===404?'Репозиторий не найден. Проверьте название и что ключ выдан на него.':'GitHub ответил ошибкой '+code+'. Попробую позже.'});
+const syncLabel=()=>!st.sync.token?'Синхронизация выключена':st.syncState==='ok'?'Синхронизировано · '+new Date(st.sync.last).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):(st.syncMsg||'Ожидание…');
+function setSync(state,msg){st.syncState=state;st.syncMsg=msg||'';const el=document.getElementById('syncst');if(el)el.textContent=syncLabel()}
+let syncing=false,syncAgain=false,syncT=null;
+function scheduleSync(){if(!st.sync.token)return;clearTimeout(syncT);setSync('busy','Изменения ждут отправки…');syncT=setTimeout(syncNow,2500)}
+async function syncNow(){
+  if(!st.sync.token)return;
+  if(syncing){syncAgain=true;return}
+  syncing=true;clearTimeout(syncT);setSync('busy','Синхронизирую…');
+  try{
+    let done=false;
+    for(let attempt=0;attempt<3&&!done;attempt++){
+      // 1. GET: read the current file and its sha
+      const r=await fetch(ghUrl()+'?t='+Date.now(),{headers:ghHeaders(),cache:'no-store'});
+      let remote={data:{},tomb:{}},sha=null;
+      if(r.status===200){const j=await r.json();sha=j.sha;try{const p=JSON.parse(b64dec(j.content));remote={data:p.data||{},tomb:p.tomb||{}}}catch(e){throw{msg:'Файл data.json на GitHub повреждён.'}}}
+      else if(r.status!==404)throw httpErr(r.status);
+      // 2. merge and apply locally right away (no await in between, so nothing typed meanwhile is lost)
+      const local={data:st.data,tomb:st.tomb},m=merge(local,remote);
+      const localChanged=norm(m)!==norm(local);
+      st.data={...st.data,...m.data};st.tomb=m.tomb;
+      if(localChanged){render();persist()}
+      // 3. PUT: send the merged file only if GitHub's copy differs
+      if(sha===null||norm(m)!==norm(remote)){
+        const body={message:'Данные · '+new Date().toLocaleString('ru-RU'),content:b64enc(JSON.stringify({app:'ravens-priorities',v:2,updated:new Date().toISOString(),data:m.data,tomb:m.tomb},null,1))};
+        if(sha)body.sha=sha;
+        const w=await fetch(ghUrl(),{method:'PUT',headers:{...ghHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+        if(w.status===409||w.status===422)continue;
+        if(!w.ok)throw httpErr(w.status);
+        const wj=await w.json();st.sync.sha=wj.content&&wj.content.sha;
+      }else st.sync.sha=sha;
+      done=true;
+    }
+    if(!done)throw{msg:'Файл менялся с другого устройства. Попробую ещё раз позже.'};
+    st.sync.last=Date.now();await saveSyncCfg();setSync('ok');
+  }catch(e){setSync('err',e&&e.msg?e.msg:(e instanceof TypeError?'Нет сети. Отправлю, когда появится.':'Ошибка синхронизации.'))}
+  finally{syncing=false;if(syncAgain){syncAgain=false;syncNow()}}
+}
+function syncBlock(){
+  const s=st.sync;
+  if(!s.token)return '<div class="cap" style="padding-top:14px;border-top:1px solid var(--line);margin-top:8px">Синхронизация</div>'+
+   '<div class="note" style="text-align:left">Записи будут храниться в вашем закрытом репозитории на GitHub и появятся на всех устройствах, где введён ключ. Фото остаются на каждом устройстве свои.</div>'+
+   '<div class="row2 f"><div><label for="sy-owner">Владелец</label><input id="sy-owner" value="'+esc(s.owner)+'" autocomplete="off" autocapitalize="off"></div><div><label for="sy-repo">Репозиторий</label><input id="sy-repo" value="'+esc(s.repo)+'" autocomplete="off" autocapitalize="off"></div></div>'+
+   '<div class="f"><label for="sy-token">Ключ доступа</label><input id="sy-token" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
+   '<button class="btn pri" data-act="sync-connect">Подключить</button>';
+  return '<div class="cap" style="padding-top:14px;border-top:1px solid var(--line);margin-top:8px">Синхронизация · '+esc(s.owner+'/'+s.repo)+'</div>'+
+   '<div class="note" style="text-align:left" id="syncst" role="status">'+esc(syncLabel())+'</div>'+
+   '<button class="btn ghost" data-act="sync-now">Синхронизировать сейчас</button>'+
+   '<button class="btn del" data-act="sync-off">Отключить на этом устройстве</button>';
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&st.sync.token&&Date.now()-st.sync.last>20000)syncNow()});
+window.addEventListener('online',()=>{if(st.sync.token)syncNow()});
 
 /* ---------- events ---------- */
 let hold=null,held=false;
@@ -504,6 +585,9 @@ document.addEventListener('click',e=>{
    case 'del':remove();break;
    case 'close':closeSheet();break;
    case 'export':exportBackup();break;
+   case 'sync-connect':{const o=val('sy-owner'),r=val('sy-repo'),t=val('sy-token');if(!o||!r||!t){toast('Заполните все три поля');break}st.sync={...st.sync,owner:o,repo:r,token:t,sha:null,last:0};saveSyncCfg();render();syncNow();break}
+   case 'sync-now':syncNow();break;
+   case 'sync-off':{if(!st.offConfirm){st.offConfirm=1;b.textContent='Нажмите ещё раз: ключ удалится с этого устройства';break}st.offConfirm=0;st.sync={...st.sync,token:'',sha:null};saveSyncCfg();setSync('off');render();toast('Синхронизация выключена');break}
   }
 });
 function updThumb(){const t=document.getElementById('sthumb');if(!t||!sheet)return;t.style.background=sheet.color;t.style.color=onC(sheet.color);t.innerHTML=subjIcon({icon:sheet.icon,iconAsset:sheet.itab==='photo'?sheet.iconAsset:null})}
@@ -532,11 +616,13 @@ render();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   try{
     const saved=await IDB.get('kv','state');
-    if(saved){Object.assign(st.data,saved.data||{});Object.assign(st.cfg,saved.cfg||{})}
+    if(saved){Object.assign(st.data,saved.data||{});Object.assign(st.cfg,saved.cfg||{});if(saved.tomb)Object.assign(st.tomb,saved.tomb)}
+    const sy=await IDB.get('kv','sync');if(sy)Object.assign(st.sync,sy);
     for(const k of await IDB.keys('files')){const b=await IDB.get('files',k);if(b)URLS[k]=URL.createObjectURL(b)}
   }catch(e){st.offline=true}
   st.assets=true;['events','subjects','lessons','expenses'].forEach(c=>st.loaded[c]=true);render();
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if(st.sync.token)syncNow();
 })();
 })();
 </script>
