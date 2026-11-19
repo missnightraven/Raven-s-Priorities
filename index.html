@@ -84,6 +84,34 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .task .mt,.task .stp{font-size:13px;opacity:.85}
 .task .stp{display:flex;gap:5px;align-items:center}
 .task .stp svg{width:14px;height:14px}
+.srch input{display:block;width:100%;border:1px solid var(--ink);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--card);-webkit-appearance:none;appearance:none}
+.nrow{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.nrow .tp{font-weight:600;overflow-wrap:anywhere}
+.nrow .sub{font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere}
+.nrow .meta{display:flex;gap:10px;font-size:12px;color:var(--muted)}
+.nrow mark,.nrow .sub mark{background:#E1CBD7;color:inherit;border-radius:3px;padding:0 1px}
+.art{display:flex;flex-direction:column;gap:14px;padding-bottom:24px}
+.art .ntitle{font-family:var(--display);font-size:24px;line-height:1.2;margin:0;overflow-wrap:anywhere}
+.art .nsrc{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.art .nsrc a{color:var(--ink)}
+.ntext{font-size:16px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.ntext a{color:var(--ink);text-decoration:underline}
+.nimg{display:block;width:100%;border-radius:12px;background:var(--soft)}
+.nimg.ph{height:160px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+.nfile{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.nfile .fn{flex:1;min-width:0}.nfile .fn div:first-child{overflow-wrap:anywhere}
+.btn.sm{width:auto;padding:8px 12px;font-size:14px}
+.btn-done{font-weight:600;padding:8px 12px;border-radius:10px;background:var(--ink);color:#fff;font-size:15px}
+.blk{display:flex;flex-direction:column;gap:6px}
+.btools{display:flex;justify-content:flex-end;gap:4px}
+.btools button{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--soft)}
+.btools svg{width:18px;height:18px}
+.addrow{display:flex;gap:8px}
+.addrow button,.addrow label{flex:1;text-align:center;padding:9px;border:1px dashed var(--ink);border-radius:10px;font-size:14px;cursor:pointer}
+.zoom{position:fixed;inset:0;z-index:50;background:#000;overflow:auto;-webkit-overflow-scrolling:touch}
+.zoom img{display:block;width:100%;margin:auto;min-height:100%;object-fit:contain}
+.zoom.big img{width:260%;max-width:none;min-height:0}
+.zoom .zx{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);color:#111;display:flex;align-items:center;justify-content:center;z-index:51}
 .lesson{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;padding:11px 12px;border-radius:12px;width:100%;text-align:left}
 .lesson .d{font-family:var(--display);font-size:13px;line-height:1.35}
 .lesson .tp{font-weight:600}
@@ -100,7 +128,7 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .tx .a{font-family:var(--display);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:8px 0 calc(10px + env(safe-area-inset-bottom,0px))}
 .nav .in{max-width:520px;margin:0 auto;display:flex;justify-content:space-around}
-.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:#9a9aa1;min-width:76px;padding:4px 0;border-radius:10px}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:#9a9aa1;min-width:64px;padding:4px 0;border-radius:10px}
 .nav button svg{width:28px;height:28px}
 .nav button.on{color:var(--ink);font-weight:600}
 .scrim{position:fixed;inset:0;background:rgba(17,17,20,.35);z-index:30}
@@ -152,6 +180,7 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 <nav class="nav" aria-label="Разделы"><div class="in">
   <button id="nav-plan" data-act="view" data-v="plan"></button>
   <button id="nav-lessons" data-act="view" data-v="lessons"></button>
+  <button id="nav-interests" data-act="view" data-v="interests"></button>
   <button id="nav-money" data-act="view" data-v="money"></button>
 </div></nav>
 <div id="layer"></div>
@@ -173,7 +202,7 @@ const IC={
  wallet:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
  repeat:'<path d="M4 11V9a3 3 0 0 1 3-3h12l-3-3M20 13v2a3 3 0 0 1-3 3H5l3 3"/>',
  point:'<circle cx="12" cy="12" r="3" fill="currentColor"/>',
- pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
+ pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>',bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',up:'<path d="M12 19V5M6 11l6-6 6 6"/>',down:'<path d="M12 5v14M6 13l6 6 6-6"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',file:'<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
  upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',photo:'<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-8 8"/>'
 };
 const PACK={
@@ -214,8 +243,8 @@ const dShort=s=>{const d=parse(s);return DOW[m0(d)]};
 const dNum=s=>{const d=parse(s);return pad(d.getDate())+'.'+pad(d.getMonth()+1)};
 
 const st={view:'plan',mode:'month',sel:today(),cur:today(),subj:null,tab:'ahead',month:today().slice(0,7),
-  data:{events:[],subjects:[],lessons:[],expenses:[]},cfg:{bgMode:'color',bgColor:'#FFFFFF',bgAsset:null,op:.85},loaded:{},db:null,assets:null,
-  tomb:{events:{},subjects:{},lessons:{},expenses:{}},
+  data:{events:[],subjects:[],lessons:[],expenses:[],ifolders:[],notes:[]},ifolder:null,note:null,edit:null,q:'',cfg:{bgMode:'color',bgColor:'#FFFFFF',bgAsset:null,op:.85},loaded:{},db:null,assets:null,
+  tomb:{events:{},subjects:{},lessons:{},expenses:{},ifolders:{},notes:{}},
   sync:{owner:'missnightraven',repo:'priorities-data',token:'',sha:null,last:0},syncState:'off',syncMsg:''};
 let sheet=null;
 
@@ -341,12 +370,12 @@ function setColor(id,h,from){
 function render(){
   const app=document.getElementById('app');
   const ready=st.loaded.events&&st.loaded.subjects&&st.loaded.lessons&&st.loaded.expenses||st.offline;
-  let h=st.view==='plan'?vPlan():st.view==='lessons'?vLessons():st.view==='money'?vMoney():vSettings();
+  let h=st.view==='plan'?vPlan():st.view==='lessons'?vLessons():st.view==='interests'?vInterests():st.view==='money'?vMoney():vSettings();
   if(!ready)h+='<div class="note" style="margin-top:10px">Загружаю данные…</div>';
   if(st.offline)h='<div class="note" style="margin:10px 0">Память телефона недоступна, изменения не сохранятся. Не открывайте приложение в режиме «Частный доступ».</div>'+h;
   app.innerHTML=h;
   if(st.view==='settings'&&(st.bgTab||st.cfg.bgMode)==='color')setColor('bg',st.bgDraft||st.cfg.bgColor||'#FFFFFF','init');
-  [['plan','calendar','План'],['lessons','school','Уроки'],['money','wallet','Траты']].forEach(([v,i,t])=>{const b=document.getElementById('nav-'+v);b.innerHTML=ico(i)+t;b.classList.toggle('on',st.view===v||(v==='plan'&&st.view==='settings'));b.setAttribute('aria-current',st.view===v?'page':'false')});
+  [['plan','calendar','План'],['lessons','school','Уроки'],['interests','bookmark','Интересы'],['money','wallet','Траты']].forEach(([v,i,t])=>{const b=document.getElementById('nav-'+v);b.innerHTML=ico(i)+t;b.classList.toggle('on',st.view===v||(v==='plan'&&st.view==='settings'));b.setAttribute('aria-current',st.view===v?'page':'false')});
   applyBg();
 }
 function applyBg(){
@@ -377,16 +406,17 @@ function evSheet(e){
    '<div class="chip preview" id="pv" style="border:1.5px '+(e.type==='once'?'dashed':'solid')+' '+esc(e.color)+'">Так будет выглядеть событие</div>'+
    '<button class="btn pri" data-act="save-ev">Сохранить</button>'+(n?'':delBtn('Удалить событие')));
 }
-function subjSheet(x){
+function subjSheet(x,kind){
+  kind=kind||'subj';const F=kind==='fold';
   const n=!x;x=x||{name:'',icon:'book',iconAsset:null,color:P[Math.floor(Math.random()*P.length)]};
-  const s={kind:'subj',id:x.id,icon:x.icon||'book',iconAsset:x.iconAsset||null,color:x.color,pid:'c',itab:x.iconAsset?'photo':'pack'};
-  openSheet(s,head(n?'Новый предмет':'Предмет')+
-   '<div style="display:flex;gap:10px;align-items:flex-end"><div class="thumb" id="sthumb" style="background:'+esc(x.color)+';color:'+onC(x.color)+'">'+subjIcon(s)+'</div><div class="f" style="flex:1"><label for="s-name">Название</label><input id="s-name" value="'+esc(x.name)+'" placeholder="Математика"></div></div>'+
+  const s={kind,id:x.id,icon:x.icon||'book',iconAsset:x.iconAsset||null,color:x.color,pid:'c',itab:x.iconAsset?'photo':'pack'};
+  openSheet(s,head(n?(F?'Новая папка':'Новый предмет'):(F?'Папка':'Предмет'))+
+   '<div style="display:flex;gap:10px;align-items:flex-end"><div class="thumb" id="sthumb" style="background:'+esc(x.color)+';color:'+onC(x.color)+'">'+subjIcon(s)+'</div><div class="f" style="flex:1"><label for="s-name">Название</label><input id="s-name" value="'+esc(x.name)+'" placeholder="'+(F?'Философия':'Математика')+'"></div></div>'+
    '<div class="f"><label>Стикер</label><div class="seg">'+[['pack','Набор'],['photo','Своё фото']].map(t=>'<button type="button" class="'+(s.itab===t[0]?'on':'')+'" data-act="itab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div></div>'+
    '<div id="ipack" '+(s.itab==='pack'?'':'hidden')+' class="pack">'+Object.keys(PACK).map(k=>'<button type="button" data-act="icon" data-k="'+k+'" class="'+(!s.iconAsset&&s.icon===k?'on':'')+'" aria-label="Стикер '+k+'">'+ico(k,PACK)+'</button>').join('')+'</div>'+
    '<div id="iphoto" '+(s.itab==='photo'?'':'hidden')+' class="stack">'+(st.assets?'<label class="btn ghost" for="ifile" style="display:flex;gap:8px;justify-content:center;align-items:center">'+ico('photo').replace('class="i"','class="i" width="20" height="20"')+'Выбрать фото из галереи</label><input id="ifile" type="file" accept="image/*" hidden><div class="cap">Фото обрежется в квадрат и станет иконкой предмета.</div>':'<div class="note">Загрузка фото доступна только в режиме редактирования.</div>')+'</div>'+
    picker('c',x.color)+
-   '<button class="btn pri" data-act="save-subj">Сохранить</button>'+(n?'':delBtn('Удалить предмет и его задания')));
+   '<button class="btn pri" data-act="save-subj">Сохранить</button>'+(n?'':delBtn(F?'Удалить папку и её записи':'Удалить предмет и его задания')));
 }
 const isUrl=v=>/^https?:\/\/\S+$/i.test((v||'').trim());
 function lesSheet(l){
@@ -419,7 +449,7 @@ const IDB=(()=>{let p;
 const URLS={};const imgUrl=id=>URLS[id]||'';
 async function persist(){try{await IDB.set('kv','state',{v:2,data:st.data,tomb:st.tomb,cfg:st.cfg})}catch(e){toast('Не удалось сохранить на телефоне')}}
 async function put(col,id,obj){const arr=st.data[col];const i=arr.findIndex(x=>x.id===id);const o={...obj,id,u:Date.now()};i<0?arr.push(o):arr[i]=o;render();await persist();scheduleSync()}
-async function del(col,id){st.data[col]=st.data[col].filter(x=>x.id!==id);st.tomb[col][id]=Date.now();render();await persist();scheduleSync()}
+async function del(col,id){st.data[col]=st.data[col].filter(x=>x.id!==id);(st.tomb[col]=st.tomb[col]||{})[id]=Date.now();render();await persist();scheduleSync()}
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const val=id=>(document.getElementById(id)?.value||'').trim();
 
@@ -430,10 +460,10 @@ async function save(){
     const o={title,type:s.type,color:s.color,from:val('ev-from'),to:val('ev-to')};
     if(s.type==='once'){o.date=val('ev-date')||st.sel}else{if(!s.days.length){toast('Выберите хотя бы один день');return}o.days=[...s.days].sort();o.start=val('ev-start')||today();o.until=val('ev-until')||''}
     await put('events',s.id||newId('events'),o);
-  }else if(s.kind==='subj'){
+  }else if(s.kind==='subj'||s.kind==='fold'){
     const name=val('s-name');if(!name){toast('Введите название');return}
-    const ex=st.data.subjects.find(x=>x.id===s.id);
-    await put('subjects',s.id||newId('subjects'),{name,icon:s.icon,iconAsset:s.itab==='photo'?s.iconAsset:null,color:s.color,order:ex?.order??st.data.subjects.length});
+    const col=s.kind==='fold'?'ifolders':'subjects',ex=st.data[col].find(x=>x.id===s.id);
+    await put(col,s.id||newId(),{name,icon:s.icon,iconAsset:s.itab==='photo'?s.iconAsset:null,color:s.color,order:ex?.order??st.data[col].length});
   }else if(s.kind==='les'){
     const topic=val('l-topic');if(!topic){toast('Введите наименование задания');return}
     const ex=st.data.lessons.find(x=>x.id===s.id),sid=s.sid||st.subj;
@@ -449,12 +479,13 @@ async function save(){
 async function remove(){
   const s=sheet,b=document.getElementById('delbtn');
   if(!s.confirm){s.confirm=1;b.textContent='Нажмите ещё раз, чтобы удалить';return}
-  const map={ev:'events',subj:'subjects',les:'lessons',exp:'expenses'};
+  const map={ev:'events',subj:'subjects',les:'lessons',exp:'expenses',fold:'ifolders'};
+  if(s.kind==='fold'){for(const x of st.data.notes.filter(x=>x.folderId===s.id))await del('notes',x.id);st.ifolder=null}
   if(s.kind==='subj'){for(const l of st.data.lessons.filter(l=>l.subjectId===s.id))await del('lessons',l.id);st.subj=null}
   await del(map[s.kind],s.id);closeSheet();toast('Удалено');
 }
-async function shrink(file){
-  try{const bmp=await createImageBitmap(file);const k=Math.min(1,1600/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.86))}catch(e){return file}
+async function shrink(file,max){
+  try{const bmp=await createImageBitmap(file);const k=Math.min(1,(max||1600)/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.86))}catch(e){return file}
 }
 async function uploadImg(file,cb){
   if(!file)return;
@@ -487,7 +518,7 @@ async function importBackup(file){
    data.json lives in a private repo. Every record carries u (last change time);
    deleted records leave a tombstone {id: time} so the deletion reaches other devices.
    GET  -> merge remote into local -> PUT back with the sha we read (409 = someone wrote first, retry). */
-const SYNC_COLS=['events','subjects','lessons','expenses'];
+const SYNC_COLS=['events','subjects','lessons','expenses','ifolders','notes'];
 const ghUrl=()=>'https://api.github.com/repos/'+encodeURIComponent(st.sync.owner)+'/'+encodeURIComponent(st.sync.repo)+'/contents/data.json';
 const ghHeaders=()=>({Authorization:'Bearer '+st.sync.token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
 const b64enc=str=>{const b=new TextEncoder().encode(str);let bin='';for(let i=0;i<b.length;i+=0x8000)bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(bin)};
@@ -514,7 +545,7 @@ let syncing=false,syncAgain=false,syncT=null;
 function scheduleSync(){if(!st.sync.token)return;clearTimeout(syncT);setSync('busy','Изменения ждут отправки…');syncT=setTimeout(syncNow,2500)}
 async function syncNow(){
   if(!st.sync.token)return;
-  if(syncing){syncAgain=true;return}
+  if(syncing||blobBusy){syncAgain=true;return}
   syncing=true;clearTimeout(syncT);setSync('busy','Синхронизирую…');
   try{
     let done=false;
@@ -528,7 +559,7 @@ async function syncNow(){
       const local={data:st.data,tomb:st.tomb},m=merge(local,remote);
       const localChanged=norm(m)!==norm(local);
       st.data={...st.data,...m.data};st.tomb=m.tomb;
-      if(localChanged){render();persist()}
+      if(localChanged){if(!st.edit)render();persist()}
       // 3. PUT: send the merged file only if GitHub's copy differs
       if(sha===null||norm(m)!==norm(remote)){
         const body={message:'Данные · '+new Date().toLocaleString('ru-RU'),content:b64enc(JSON.stringify({app:'ravens-priorities',v:2,updated:new Date().toISOString(),data:m.data,tomb:m.tomb},null,1))};
@@ -541,9 +572,9 @@ async function syncNow(){
       done=true;
     }
     if(!done)throw{msg:'Файл менялся с другого устройства. Попробую ещё раз позже.'};
-    st.sync.last=Date.now();await saveSyncCfg();setSync('ok');
+    st.sync.last=Date.now();await saveSyncCfg();setSync('ok');syncing=false;await blobSync();
   }catch(e){setSync('err',e&&e.msg?e.msg:(e instanceof TypeError?'Нет сети. Отправлю, когда появится.':'Ошибка синхронизации.'))}
-  finally{syncing=false;if(syncAgain){syncAgain=false;syncNow()}}
+  finally{syncing=false;if(syncAgain&&!blobBusy){syncAgain=false;syncNow()}}
 }
 function syncBlock(){
   const s=st.sync;
@@ -560,9 +591,162 @@ function syncBlock(){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&st.sync.token&&Date.now()-st.sync.last>20000)syncNow()});
 window.addEventListener('online',()=>{if(st.sync.token)syncNow()});
 
+/* ---------- interests ---------- */
+const TG_FOLDERS=[['Чтение','book'],['Физика','atom'],['Математика','math'],['Программирование','code'],['Нейро. Биология','brain'],['Искусство — живопись','palette'],['Политика. Новостной портал','globe'],['Словарь. Этимология','book'],['История','book'],['Поиск в будущем','star'],['Литература. Словесность','book'],['Психология','brain'],['Мои мысли и наблюдения','star'],['Жизнь','yarn'],['Философия','globe'],['Химия','flask'],['Музыка','music'],['Фильмы','star'],['Язык','globe'],['Console Win/Mac','cpu'],['Финансы','chart'],['Идея для проектов','star'],['Рандомные факты','wave'],['Гитара','pick']];
+function seedFolders(){
+  // fixed ids and u=1: the same folders on every device, and any later edit or deletion wins over the seed
+  if(st.cfg.seeded||st.data.ifolders.length)return;
+  st.data.ifolders=TG_FOLDERS.map(([name,icon],i)=>({id:'tg'+i,name,icon,iconAsset:null,color:P[i%P.length],order:i,u:1}));
+  st.cfg.seeded=1;persist();
+}
+const notesOf=fid=>st.data.notes.filter(x=>x.folderId===fid).sort((a,b)=>(b.n||0)-(a.n||0));
+const fsize=b=>b>=1048576?(b/1048576).toFixed(1).replace('.',',')+' МБ':Math.max(1,Math.round(b/1024))+' КБ';
+const linkify=h=>h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+const nrm=x=>String(x||'').toLowerCase().replace(/ё/g,'е');
+const noteText=x=>(x.blocks||[]).filter(b=>b.t==='text').map(b=>b.v).join('\n');
+function noteSub(x){const t=noteText(x).trim();return x.source?x.source+(t?' · '+t:''):t}
+function noteRow(x,sub){
+  const imgs=(x.blocks||[]).filter(b=>b.t==='img').length,fl=(x.files||[]).length;
+  return '<button class="nrow" data-act="open-note" data-id="'+x.id+'"><span class="tp">'+esc(x.title)+'</span>'+(sub?'<span class="sub">'+sub+'</span>':'')+
+   ((imgs||fl)?'<span class="meta">'+(imgs?'Фото: '+imgs:'')+(fl?'<span>Файлы: '+fl+'</span>':'')+'</span>':'')+'</button>';
+}
+function foldersHtml(){
+  const list=[...st.data.ifolders].sort((a,b)=>(a.order??0)-(b.order??0));
+  if(!list.length)return '<div class="empty">Создайте первую папку кнопкой «+».</div>';
+  return '<div class="stack">'+list.map(f=>{const c=f.color||P[3],k=notesOf(f.id).length;
+    return '<button class="subj" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="open-folder" data-id="'+f.id+'" data-hold="fold"><span class="ico">'+subjIcon(f)+'</span><span class="txt"><span class="nm">'+esc(f.name)+'</span><span class="sub">'+(k?k+' '+(k%10===1&&k%100!==11?'запись':(k%10>=2&&k%10<=4&&(k%100<10||k%100>=20))?'записи':'записей'):'Пусто')+'</span></span>'+ico('right')+'</button>'}).join('')+
+   '<div class="note">Удерживайте папку, чтобы изменить её</div></div>';
+}
+function searchHtml(q){
+  const qq=nrm(q.trim());if(!qq)return foldersHtml();
+  const hl=(text)=>{const t=String(text||''),i=nrm(t).indexOf(qq);if(i<0)return null;const a=Math.max(0,i-50),b=Math.min(t.length,i+qq.length+80);
+    return (a>0?'…':'')+esc(t.slice(a,i))+'<mark>'+esc(t.slice(i,i+qq.length))+'</mark>'+esc(t.slice(i+qq.length,b))+(b<t.length?'…':'')};
+  const res=st.data.notes.filter(x=>nrm(x.title+'\n'+(x.source||'')+'\n'+noteText(x)).includes(qq)).sort((a,b)=>(b.n||0)-(a.n||0)).slice(0,60);
+  if(!res.length)return '<div class="empty">Ничего не нашлось по запросу «'+esc(q.trim())+'».</div>';
+  return '<div class="cap">Найдено: '+res.length+'</div><div class="stack" style="gap:8px">'+res.map(x=>{const f=st.data.ifolders.find(y=>y.id===x.folderId);
+    const sub=(f?esc(f.name)+' · ':'')+(hl(noteText(x))||hl(x.source)||esc(noteSub(x).slice(0,120)));
+    const title=hl(x.title)&&x.title.length<120?hl(x.title):esc(x.title);
+    return '<button class="nrow" data-act="open-note" data-id="'+x.id+'"><span class="tp">'+title+'</span><span class="sub">'+sub+'</span></button>'}).join('')+'</div>';
+}
+function vInterests(){
+  if(st.note){const x=st.note==='new'?null:st.data.notes.find(y=>y.id===st.note);if(st.edit||x)return vNote(x);st.note=null}
+  if(st.ifolder){const f=st.data.ifolders.find(y=>y.id===st.ifolder);if(f)return vFolder(f);st.ifolder=null}
+  return '<div class="top"><h1>Интересы</h1><button class="ib" data-act="new-folder" aria-label="Добавить папку">'+ico('plus')+'</button></div>'+
+   '<div class="stack"><div class="f srch"><input id="isearch" type="search" placeholder="Поиск по всем записям" value="'+esc(st.q)+'" autocomplete="off" aria-label="Поиск по всем записям"></div><div id="iresults">'+(st.q.trim()?searchHtml(st.q):foldersHtml())+'</div></div>';
+}
+function vFolder(f){
+  const list=notesOf(f.id);
+  return '<div class="top"><button class="ib" data-act="iback" aria-label="К папкам">'+ico('left')+'</button><h1>'+esc(f.name)+'</h1><button class="ib" data-act="edit-folder" data-id="'+f.id+'" aria-label="Изменить папку">'+ico('pencil')+'</button><button class="ib" data-act="new-note" aria-label="Добавить запись">'+ico('plus')+'</button></div>'+
+   '<div class="stack" style="gap:8px">'+(list.length?list.map(x=>noteRow(x,esc(noteSub(x).slice(0,200)))).join(''):'<div class="empty">В папке пока пусто. Добавьте запись кнопкой «+».</div>')+'</div>';
+}
+function imgHtml(f,zoom){
+  if(URLS[f])return '<img class="nimg" src="'+URLS[f]+'" alt=""'+(zoom?' data-act="zoom" data-f="'+esc(f)+'"':'')+'>';
+  ensureBlob(f);return '<div class="nimg ph">'+(st.sync.token?'Загружаю фото…':'Фото есть на другом устройстве')+'</div>';
+}
+function vNote(x){
+  const e=st.edit,cur=e||x,f=st.data.ifolders.find(y=>y.id===cur.folderId);
+  const top='<div class="top"><button class="ib" data-act="nback" aria-label="Назад">'+ico('left')+'</button><h1>'+esc(f?f.name:'Интересы')+'</h1>'+(e?'<button class="btn-done" data-act="note-done">Готово</button>':'<button class="ib" data-act="note-edit" aria-label="Изменить запись">'+ico('pencil')+'</button>')+'</div>';
+  if(!e){
+    const src=x.source||'';
+    return top+'<article class="art"><h2 class="ntitle">'+esc(x.title)+'</h2>'+
+     (src?'<div class="nsrc">'+(isUrl(src)?'<a href="'+esc(src.trim())+'" target="_blank" rel="noopener">'+esc(src.trim().replace(/^https?:\/\//,'').slice(0,60))+' ↗</a>':esc(src))+'</div>':'')+
+     (x.blocks||[]).map(b=>b.t==='img'?imgHtml(b.f,1):'<div class="ntext">'+linkify(esc(b.v))+'</div>').join('')+
+     ((x.files||[]).length?'<div class="stack" style="gap:8px"><div class="cap">Файлы</div>'+x.files.map((m,i)=>'<div class="nfile">'+ico('file')+'<div class="fn"><div>'+esc(m.name)+'</div><div class="cap">'+fsize(m.size||0)+'</div></div><button class="btn ghost sm" data-act="file-open" data-i="'+i+'">Открыть</button><button class="btn ghost sm" data-act="file-save" data-i="'+i+'">Сохранить</button></div>').join('')+'</div>':'')+
+     '</article>';
+  }
+  const add=i=>'<div class="addrow"><button type="button" data-act="add-text" data-i="'+i+'">+ Текст</button><label for="addimg'+i+'">+ Фото</label><input id="addimg'+i+'" class="addimg" data-i="'+i+'" type="file" accept="image/*" hidden></div>';
+  return top+'<div class="art">'+
+   '<div class="f"><label for="n-title">Наименование</label><input id="n-title" value="'+esc(e.title)+'" placeholder="О чём эта запись"></div>'+
+   '<div class="f"><label for="n-src">Источник информации</label><input id="n-src" value="'+esc(e.source)+'" placeholder="Книга, стр. 42 или https://…" autocapitalize="off"></div>'+
+   '<div class="cap">Содержание</div>'+(e.blocks.length?'':add(-1))+
+   e.blocks.map((b,i)=>'<div class="blk">'+(b.t==='img'?imgHtml(b.f,0):'<div class="f"><textarea data-blk="'+i+'" rows="4" placeholder="Текст…" aria-label="Текстовый блок '+(i+1)+'">'+esc(b.v)+'</textarea></div>')+
+     '<div class="btools"><button type="button" data-act="blk-up" data-i="'+i+'" aria-label="Выше">'+ico('up')+'</button><button type="button" data-act="blk-down" data-i="'+i+'" aria-label="Ниже">'+ico('down')+'</button><button type="button" data-act="blk-del" data-i="'+i+'" aria-label="Удалить блок">'+ico('trash')+'</button></div></div>'+add(i)).join('')+
+   '<div class="cap">Файлы</div>'+
+   e.files.map((m,i)=>'<div class="nfile">'+ico('file')+'<div class="fn"><div>'+esc(m.name)+'</div><div class="cap">'+fsize(m.size||0)+'</div></div><button type="button" class="btn ghost sm" data-act="file-del" data-i="'+i+'" aria-label="Убрать файл">'+ico('x')+'</button></div>').join('')+
+   '<label class="btn ghost" for="addfile">+ Прикрепить файл (PDF, EPUB…)</label><input id="addfile" type="file" hidden>'+
+   (e.id?'<button class="btn del" data-act="note-del" id="ndel">Удалить запись</button>':'')+
+   '</div>';
+}
+async function saveNote(){
+  const e=st.edit;if(!e)return;
+  const blocks=e.blocks.filter(b=>b.t!=='text'||b.v.trim());
+  st.edit=null;
+  if(!e.title.trim()&&!e.source.trim()&&!blocks.length&&!e.files.length){if(!e.id)st.note=null;return}
+  const id=e.id||newId(),ex=st.data.notes.find(y=>y.id===id);
+  st.note=id;
+  await put('notes',id,{folderId:e.folderId,title:e.title.trim()||'Без названия',source:e.source.trim(),blocks,files:e.files,n:ex?.n??Date.now()});
+}
+function startEdit(x){st.edit=x?{id:x.id,folderId:x.folderId,title:x.title||'',source:x.source||'',blocks:JSON.parse(JSON.stringify(x.blocks||[])),files:JSON.parse(JSON.stringify(x.files||[]))}:{id:null,folderId:st.ifolder,title:'',source:'',blocks:[{t:'text',v:''}],files:[]}}
+async function addNoteImg(file,at){
+  if(!file||!st.edit)return;
+  try{const blob=await shrink(file,2000),id=newId();await IDB.set('files',id,blob);URLS[id]=URL.createObjectURL(blob);st.edit.blocks.splice(at+1,0,{t:'img',f:id});render()}
+  catch(e){toast('Не удалось добавить фото')}
+}
+async function addNoteFile(file){
+  if(!file||!st.edit)return;
+  try{const id=newId();await IDB.set('files',id,file);
+    st.edit.files.push({f:id,name:file.name||'файл',size:file.size,type:file.type||''});render();
+    if(file.size>95e6)toast('Файл больше 100 МБ: GitHub его не примет, он останется только на этом устройстве');
+  }catch(e){toast('Не удалось прикрепить файл')}
+}
+function openZoom(f){
+  if(!URLS[f])return;
+  document.getElementById('layer').innerHTML='<div class="zoom" id="zoom"><button class="zx" data-act="zoom-close" aria-label="Закрыть">'+ico('x')+'</button><img src="'+URLS[f]+'" alt="" data-act="zoom-toggle"></div>';
+}
+/* ---------- photos and files in the private repo: files/<id> ---------- */
+let up=new Set(),blobBusy=false;const pendingBlob=new Set();
+const ghFile=id=>'https://api.github.com/repos/'+encodeURIComponent(st.sync.owner)+'/'+encodeURIComponent(st.sync.repo)+'/contents/files/'+encodeURIComponent(id);
+async function saveUp(){try{await IDB.set('kv','up',[...up])}catch(e){}}
+function noteBlobs(){const ids=[];for(const x of st.data.notes){for(const b of x.blocks||[])if(b.t==='img')ids.push(b.f);for(const m of x.files||[])if(!(m.size>95e6))ids.push(m.f)}return ids}
+async function blobSync(){
+  if(!st.sync.token||blobBusy)return;
+  blobBusy=true;
+  try{
+    for(const id of noteBlobs()){
+      if(up.has(id))continue;
+      const b=await IDB.get('files',id);if(!b)continue;
+      setSync('busy','Отправляю фото и файлы…');
+      const content=(await toDataURL(b)).split(',')[1]||'';
+      const r=await fetch(ghFile(id),{method:'PUT',headers:{...ghHeaders(),'Content-Type':'application/json'},body:JSON.stringify({message:'Файл · '+id,content})});
+      if(r.ok||r.status===422){up.add(id);await saveUp();continue}   // 422: already on GitHub
+      if(r.status===409){syncAgain=true;break}                      // someone committed at the same moment: try later
+      throw httpErr(r.status);
+    }
+    if(st.syncState==='busy')setSync('ok');
+  }catch(e){setSync('err',e&&e.msg?e.msg:(e instanceof TypeError?'Нет сети. Отправлю файлы позже.':'Не удалось отправить файлы.'))}
+  finally{blobBusy=false;if(syncAgain){syncAgain=false;setTimeout(syncNow,1500)}}
+}
+async function getBlob(id){
+  let b=await IDB.get('files',id);
+  if(!b&&st.sync.token){
+    const r=await fetch(ghFile(id)+'?t='+Date.now(),{headers:{...ghHeaders(),Accept:'application/vnd.github.raw'},cache:'no-store'});
+    if(!r.ok)throw httpErr(r.status);
+    b=await r.blob();await IDB.set('files',id,b);up.add(id);saveUp();
+  }
+  return b||null;
+}
+async function ensureBlob(id){
+  if(URLS[id]||pendingBlob.has(id)||!st.sync.token)return;
+  pendingBlob.add(id);
+  try{const b=await getBlob(id);if(b){URLS[id]=URL.createObjectURL(b);if(st.view==='interests')render()}}catch(e){}
+  finally{pendingBlob.delete(id)}
+}
+async function fileAction(i,mode){
+  const x=st.data.notes.find(y=>y.id===st.note),m=x&&x.files[i];if(!m)return;
+  try{
+    if(!URLS[m.f])toast('Загружаю файл…');
+    const b=await getBlob(m.f);if(!b){toast('Файл есть только на другом устройстве');return}
+    const type=m.type||(/\.pdf$/i.test(m.name)?'application/pdf':/\.epub$/i.test(m.name)?'application/epub+zip':b.type);
+    const file=new File([b],m.name,{type});
+    if(mode==='open'&&/pdf|image|text/.test(type)){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();return}
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]})}catch(e){}return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=m.name;document.body.appendChild(a);a.click();a.remove();
+  }catch(e){toast(e&&e.msg?e.msg:'Не удалось открыть файл')}
+}
+
 /* ---------- events ---------- */
 let hold=null,held=false;
-document.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-hold]');if(!b)return;held=false;hold=setTimeout(()=>{held=true;const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x)},550)});
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-hold]');if(!b)return;held=false;hold=setTimeout(()=>{held=true;if(b.dataset.hold==='fold'){const x=st.data.ifolders.find(s=>s.id===b.dataset.id);if(x)subjSheet(x,'fold')}else{const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x)}},550)});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>document.addEventListener(t,()=>clearTimeout(hold)));
 document.addEventListener('contextmenu',e=>{if(e.target.closest('[data-hold]'))e.preventDefault()});
 document.addEventListener('click',e=>{
@@ -570,7 +754,26 @@ document.addEventListener('click',e=>{
   if(held&&b.dataset.hold){held=false;return}
   const c=parse(st.cur);
   switch(a){
-   case 'view':{const was=st.view;st.view=b.dataset.v;if(st.view==='lessons'&&was==='lessons')st.subj=null;}window.scrollTo(0,0);render();break;
+   case 'view':{const was=st.view;if(st.edit)saveNote();st.view=b.dataset.v;if(st.view==='lessons'&&was==='lessons')st.subj=null;if(st.view==='interests'&&was==='interests'){st.ifolder=null;st.note=null}}window.scrollTo(0,0);render();break;
+   case 'open-folder':st.ifolder=b.dataset.id;st.note=null;window.scrollTo(0,0);render();break;
+   case 'iback':st.ifolder=null;window.scrollTo(0,0);render();break;
+   case 'new-folder':subjSheet(null,'fold');break;
+   case 'edit-folder':{const x=st.data.ifolders.find(y=>y.id===b.dataset.id);if(x)subjSheet(x,'fold');break}
+   case 'new-note':st.note='new';startEdit(null);window.scrollTo(0,0);render();break;
+   case 'open-note':{const x=st.data.notes.find(y=>y.id===b.dataset.id);if(x){st.ifolder=x.folderId;st.note=x.id;st.edit=null;window.scrollTo(0,0);render()}break}
+   case 'note-edit':{const x=st.data.notes.find(y=>y.id===st.note);if(x){startEdit(x);render()}break}
+   case 'note-done':saveNote().then(()=>{window.scrollTo(0,0);render()});break;
+   case 'nback':saveNote().then(()=>{st.note=null;window.scrollTo(0,0);render()});break;
+   case 'add-text':{const i=+b.dataset.i;st.edit.blocks.splice(i+1,0,{t:'text',v:''});render();const t=document.querySelector('textarea[data-blk="'+(i+1)+'"]');if(t)t.focus();break}
+   case 'blk-up':case 'blk-down':{const i=+b.dataset.i,j=a==='blk-up'?i-1:i+1,B=st.edit.blocks;if(j>=0&&j<B.length){[B[i],B[j]]=[B[j],B[i]];render()}break}
+   case 'blk-del':st.edit.blocks.splice(+b.dataset.i,1);render();break;
+   case 'file-del':st.edit.files.splice(+b.dataset.i,1);render();break;
+   case 'note-del':{if(!st.ndel){st.ndel=1;b.textContent='Нажмите ещё раз, чтобы удалить';break}st.ndel=0;const id=st.edit&&st.edit.id;st.edit=null;st.note=null;if(id)del('notes',id);else render();toast('Удалено');break}
+   case 'zoom':openZoom(b.dataset.f);break;
+   case 'zoom-toggle':document.getElementById('zoom').classList.toggle('big');break;
+   case 'zoom-close':document.getElementById('layer').innerHTML='';break;
+   case 'file-open':fileAction(+b.dataset.i,'open');break;
+   case 'file-save':fileAction(+b.dataset.i,'save');break;
    case 'mode':st.mode=b.dataset.m;st.cur=st.sel;render();break;
    case 'sel':st.sel=b.dataset.d;if(st.mode!=='week')st.cur=st.mode==='month'?st.sel:st.cur;render();break;
    case 'prev':case 'next':{const k=a==='prev'?-1:1;if(st.mode==='week'){st.sel=ymd(addD(parse(st.sel),7*k));st.cur=st.sel}else{const n=new Date(c.getFullYear(),c.getMonth()+k*(st.mode==='q'?3:1),1);st.cur=ymd(n);st.sel=ymd(n)}render();break}
@@ -610,6 +813,8 @@ function updThumb(){const t=document.getElementById('sthumb');if(!t||!sheet)retu
 document.addEventListener('input',e=>{
   const t=e.target,id=t.id||'';
   if(t.tagName==='TEXTAREA')grow(t);
+  if(st.edit){if(id==='n-title')st.edit.title=t.value;else if(id==='n-src')st.edit.source=t.value;else if(t.dataset.blk!=null&&st.edit.blocks[+t.dataset.blk])st.edit.blocks[+t.dataset.blk].v=t.value}
+  if(id==='isearch'){st.q=t.value;const r=document.getElementById('iresults');if(r)r.innerHTML=st.q.trim()?searchHtml(st.q):foldersHtml()}
   if(id==='l-mat'){const a=document.getElementById('l-link');if(a){const ok=isUrl(t.value);a.hidden=!ok;a.href=ok?t.value.trim():'#'}}
   const m=id.match(/^(c|bg)-(hex|r|g|b|native)$/);
   if(m){const p=m[1],k=m[2];
@@ -624,6 +829,8 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='bgfile')uploadImg(t.files[0],id=>{saveCfg({bgAsset:id,bgMode:'photo'});toast('Фон обновлён')});
   if(t.id==='importfile'){importBackup(t.files[0]);t.value=''}
+  if(t.classList&&t.classList.contains('addimg')){addNoteImg(t.files[0],+t.dataset.i);t.value=''}
+  if(t.id==='addfile'){addNoteFile(t.files[0]);t.value=''}
   if(t.id==='ifile')uploadImg(t.files[0],id=>{if(!sheet)return;sheet.iconAsset=id;sheet.itab='photo';updThumb();toast('Иконка загружена')});
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet)closeSheet()});
@@ -636,6 +843,9 @@ render();
     const saved=await IDB.get('kv','state');
     if(saved){Object.assign(st.data,saved.data||{});Object.assign(st.cfg,saved.cfg||{});if(saved.tomb)Object.assign(st.tomb,saved.tomb)}
     const sy=await IDB.get('kv','sync');if(sy)Object.assign(st.sync,sy);
+    const u0=await IDB.get('kv','up');if(u0)up=new Set(u0);
+    SYNC_COLS.forEach(c=>{if(!Array.isArray(st.data[c]))st.data[c]=[];st.tomb[c]=st.tomb[c]||{}});
+    seedFolders();
     for(const k of await IDB.keys('files')){const b=await IDB.get('files',k);if(b)URLS[k]=URL.createObjectURL(b)}
   }catch(e){st.offline=true}
   st.assets=true;['events','subjects','lessons','expenses'].forEach(c=>st.loaded[c]=true);render();
