@@ -74,6 +74,16 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .subj .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .subj .nm{font-weight:600;font-size:16px}
 .subj .sub{font-size:13px;opacity:.85}
+.task{display:flex;align-items:stretch;border-radius:12px;border:1px solid var(--line);background:var(--card);overflow:hidden}
+.task.done{border-color:transparent}
+.task .ck{flex:none;width:52px;display:flex;align-items:center;justify-content:center}
+.task .ck span{width:24px;height:24px;border-radius:7px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center}
+.task .ck svg{width:16px;height:16px}
+.task .bd{flex:1;min-width:0;text-align:left;padding:12px 12px 12px 0;display:flex;flex-direction:column;gap:2px}
+.task .tp{font-weight:600;overflow-wrap:anywhere}
+.task .mt,.task .stp{font-size:13px;opacity:.85}
+.task .stp{display:flex;gap:5px;align-items:center}
+.task .stp svg{width:14px;height:14px}
 .lesson{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;padding:11px 12px;border-radius:12px;width:100%;text-align:left}
 .lesson .d{font-family:var(--display);font-size:13px;line-height:1.35}
 .lesson .tp{font-weight:600}
@@ -159,7 +169,7 @@ const IC={
  wallet:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
  repeat:'<path d="M4 11V9a3 3 0 0 1 3-3h12l-3-3M20 13v2a3 3 0 0 1-3 3H5l3 3"/>',
  point:'<circle cx="12" cy="12" r="3" fill="currentColor"/>',
- pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
+ pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
  upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',photo:'<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-8 8"/>'
 };
 const PACK={
@@ -256,28 +266,24 @@ function subjIcon(s,size){
   if(s.iconAsset)return '<img src="'+imgUrl(s.iconAsset)+'" alt="">';
   return ico(s.icon||'book',PACK);
 }
-function nextLesson(sid){
-  const t=today();return st.data.lessons.filter(l=>l.subjectId===sid&&l.date>=t).sort((a,b)=>a.date.localeCompare(b.date))[0];
-}
+const tasksOf=sid=>st.data.lessons.filter(l=>l.subjectId===sid).sort((a,b)=>(a.n??1e15)-(b.n??1e15)||(a.date||'').localeCompare(b.date||'')||(a.id<b.id?-1:1));
+function nextLesson(sid){return tasksOf(sid).find(l=>!l.done)}
 function vLessons(){
   if(st.subj){const s=st.data.subjects.find(x=>x.id===st.subj);if(s)return vSubject(s);st.subj=null}
   const list=[...st.data.subjects].sort((a,b)=>(a.order??0)-(b.order??0));
   return '<div class="top"><h1>Уроки</h1><button class="ib" data-act="new-subj" aria-label="Добавить предмет">'+ico('plus')+'</button></div><div class="stack"><div class="cap">Предметы</div>'+
-  (list.length?list.map(s=>{const n=nextLesson(s.id),c=s.color||P[3];return '<button class="subj" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="open-subj" data-id="'+s.id+'" data-hold="edit-subj"><span class="ico">'+subjIcon(s)+'</span><span class="txt"><span class="nm">'+esc(s.name)+'</span><span class="sub">'+(n?esc(dShort(n.date)+' · '+n.topic):'Уроков впереди нет')+'</span></span>'+ico('right')+'</button>'}).join('')+'<div class="note">Удерживайте предмет, чтобы изменить его</div>'
+  (list.length?list.map(s=>{const n=nextLesson(s.id),c=s.color||P[3];return '<button class="subj" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="open-subj" data-id="'+s.id+'" data-hold="edit-subj"><span class="ico">'+subjIcon(s)+'</span><span class="txt"><span class="nm">'+esc(s.name)+'</span><span class="sub">'+(n?'Дальше: '+esc(n.topic):(tasksOf(s.id).length?'Все задания выполнены':'Заданий пока нет'))+'</span></span>'+ico('right')+'</button>'}).join('')+'<div class="note">Удерживайте предмет, чтобы изменить его</div>'
   :'<div class="empty">Добавьте первый предмет кнопкой «+»: например, математику или физику.</div>')+'</div>';
 }
 function weekLabel(d){const ws=weekStart(parse(d)),we=addD(ws,6);return 'Неделя '+ws.getDate()+(ws.getMonth()!==we.getMonth()?' '+MONG[ws.getMonth()]:'')+'–'+we.getDate()+' '+MONG[we.getMonth()]}
 function vSubject(s){
-  const t=today(),c=s.color||P[3];
-  let ls=st.data.lessons.filter(l=>l.subjectId===s.id);
-  ls=st.tab==='ahead'?ls.filter(l=>l.date>=t).sort((a,b)=>a.date.localeCompare(b.date)):ls.filter(l=>l.date<t).sort((a,b)=>b.date.localeCompare(a.date));
-  let h='',wk='';
-  ls.forEach((l,i)=>{const w=weekLabel(l.date);if(w!==wk){h+='<div class="cap" style="padding-top:4px">'+esc(w)+'</div>';wk=w}
-    const first=st.tab==='ahead'&&i===0;const bg=first?c:'var(--card)';const fg=first?onC(c):'var(--ink)';
-    h+='<button class="lesson" style="background:'+bg+';color:'+fg+(first?'':';border:1px solid var(--line)')+'" data-act="edit-les" data-id="'+l.id+'"><span class="d">'+dShort(l.date)+'<br>'+dNum(l.date)+(l.from?'<br>'+esc(l.from):'')+'</span><span style="min-width:0"><span class="tp" style="display:block">'+esc(l.topic)+'</span>'+(l.material?'<span class="mt" style="display:block">'+esc(l.material)+'</span>':'')+(l.stop?'<span class="stp">'+ico('flag')+'Стоп: '+esc(l.stop)+'</span>':'')+'</span></button>'});
-  return '<div class="top"><button class="ib" data-act="back" aria-label="К предметам">'+ico('left')+'</button><h1>'+esc(s.name)+'</h1><button class="ib" data-act="edit-subj" data-id="'+s.id+'" aria-label="Изменить предмет">'+ico('pencil')+'</button><button class="ib" data-act="new-les" aria-label="Добавить урок">'+ico('plus')+'</button></div>'+
-  '<div class="stack"><div class="seg">'+[['ahead','Впереди'],['done','Пройдено']].map(x=>'<button class="'+(st.tab===x[0]?'on':'')+'" data-act="tab" data-t="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+
-  (h||'<div class="empty">'+(st.tab==='ahead'?'Впереди пусто. Добавьте урок кнопкой «+».':'Здесь появятся уроки, дата которых уже прошла.')+'</div>')+'</div>';
+  const c=s.color||P[3],fg=onC(c),ls=tasksOf(s.id);
+  const h=ls.map(l=>{const d=!!l.done;
+    return '<div class="task'+(d?' done':'')+'" style="'+(d?'background:'+esc(c)+';color:'+fg:'')+'">'+
+      '<button class="ck" data-act="toggle-les" data-id="'+l.id+'" aria-pressed="'+d+'" aria-label="'+(d?'Отметить как невыполненное':'Отметить как выполненное')+': '+esc(l.topic)+'"><span>'+(d?ico('check'):'')+'</span></button>'+
+      '<button class="bd" data-act="edit-les" data-id="'+l.id+'"><span class="tp">'+esc(l.topic)+'</span>'+(l.material?'<span class="mt">'+esc(l.material)+'</span>':'')+(l.stop?'<span class="stp">'+ico('flag')+'Стоп: '+esc(l.stop)+'</span>':'')+'</button></div>'}).join('');
+  return '<div class="top"><button class="ib" data-act="back" aria-label="К предметам">'+ico('left')+'</button><h1>'+esc(s.name)+'</h1><button class="ib" data-act="edit-subj" data-id="'+s.id+'" aria-label="Изменить предмет">'+ico('pencil')+'</button><button class="ib" data-act="new-les" aria-label="Добавить задание">'+ico('plus')+'</button></div>'+
+  '<div class="stack" style="gap:8px">'+(h||'<div class="empty">Заданий пока нет. Добавьте первое кнопкой «+».</div>')+'</div>';
 }
 function vMoney(){
   const [y,m]=st.month.split('-').map(Number);
@@ -375,17 +381,16 @@ function subjSheet(x){
    '<div id="ipack" '+(s.itab==='pack'?'':'hidden')+' class="pack">'+Object.keys(PACK).map(k=>'<button type="button" data-act="icon" data-k="'+k+'" class="'+(!s.iconAsset&&s.icon===k?'on':'')+'" aria-label="Стикер '+k+'">'+ico(k,PACK)+'</button>').join('')+'</div>'+
    '<div id="iphoto" '+(s.itab==='photo'?'':'hidden')+' class="stack">'+(st.assets?'<label class="btn ghost" for="ifile" style="display:flex;gap:8px;justify-content:center;align-items:center">'+ico('photo').replace('class="i"','class="i" width="20" height="20"')+'Выбрать фото из галереи</label><input id="ifile" type="file" accept="image/*" hidden><div class="cap">Фото обрежется в квадрат и станет иконкой предмета.</div>':'<div class="note">Загрузка фото доступна только в режиме редактирования.</div>')+'</div>'+
    picker('c',x.color)+
-   '<button class="btn pri" data-act="save-subj">Сохранить</button>'+(n?'':delBtn('Удалить предмет и его уроки')));
+   '<button class="btn pri" data-act="save-subj">Сохранить</button>'+(n?'':delBtn('Удалить предмет и его задания')));
 }
 function lesSheet(l){
-  const n=!l;l=l||{subjectId:st.subj,topic:'',material:'',stop:'',date:today(),from:'',to:''};
-  openSheet({kind:'les',id:l.id},head(n?'Новый урок':'Урок')+
+  const n=!l;l=l||{subjectId:st.subj,topic:'',material:'',stop:''};
+  openSheet({kind:'les',id:l.id},head(n?'Новое задание':'Задание')+
    '<div class="f"><label for="l-subj">Предмет</label><select id="l-subj">'+st.data.subjects.map(s=>'<option value="'+s.id+'"'+(s.id===l.subjectId?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div>'+
-   '<div class="f"><label for="l-topic">Тема</label><input id="l-topic" value="'+esc(l.topic)+'" placeholder="Определитель"></div>'+
-   '<div class="f"><label for="l-mat">Материал</label><input id="l-mat" value="'+esc(l.material)+'" placeholder="3B1B, эпизод 6"></div>'+
-   '<div class="f"><label for="l-stop">Точка остановки</label><input id="l-stop" value="'+esc(l.stop)+'" placeholder="10 задач решено"></div>'+
-   '<div class="row2 f"><div><label for="l-date">Дата</label><input id="l-date" type="date" value="'+esc(l.date)+'"></div><div class="row2"><div><label for="l-from">С</label><input id="l-from" type="time" value="'+esc(l.from||'')+'"></div><div><label for="l-to">До</label><input id="l-to" type="time" value="'+esc(l.to||'')+'"></div></div></div>'+
-   '<button class="btn pri" data-act="save-les">Сохранить</button>'+(n?'':delBtn('Удалить урок')));
+   '<div class="f"><label for="l-topic">Задание</label><input id="l-topic" value="'+esc(l.topic)+'" placeholder="Определитель"></div>'+
+   '<div class="f"><label for="l-mat">Материал (необязательно)</label><input id="l-mat" value="'+esc(l.material||'')+'" placeholder="3B1B, эпизод 6"></div>'+
+   '<div class="f"><label for="l-stop">Точка остановки (необязательно)</label><input id="l-stop" value="'+esc(l.stop||'')+'" placeholder="10 задач решено"></div>'+
+   '<button class="btn pri" data-act="save-les">Сохранить</button>'+(n?'':delBtn('Удалить задание')));
 }
 function expSheet(e){
   const n=!e;e=e||{title:'',amount:'',category:'food',date:today()};
@@ -422,8 +427,10 @@ async function save(){
     const ex=st.data.subjects.find(x=>x.id===s.id);
     await put('subjects',s.id||newId('subjects'),{name,icon:s.icon,iconAsset:s.itab==='photo'?s.iconAsset:null,color:s.color,order:ex?.order??st.data.subjects.length});
   }else if(s.kind==='les'){
-    const topic=val('l-topic');if(!topic){toast('Введите тему');return}
-    await put('lessons',s.id||newId('lessons'),{subjectId:val('l-subj'),topic,material:val('l-mat'),stop:val('l-stop'),date:val('l-date')||today(),from:val('l-from'),to:val('l-to')});
+    const topic=val('l-topic');if(!topic){toast('Введите название задания');return}
+    const ex=st.data.lessons.find(x=>x.id===s.id),sid=val('l-subj');
+    const nn=ex&&ex.subjectId===sid&&ex.n!=null?ex.n:Math.max(0,...st.data.lessons.filter(x=>x.subjectId===sid).map(x=>x.n??0))+1;
+    await put('lessons',s.id||newId('lessons'),{subjectId:sid,topic,material:val('l-mat'),stop:val('l-stop'),done:!!(ex&&ex.done),n:nn});
   }else if(s.kind==='exp'){
     const amount=parseFloat(val('x-amount').replace(/\s/g,'').replace(',','.'));if(!(amount>0)){toast('Введите сумму');return}
     const ex=st.data.expenses.find(x=>x.id===s.id);
@@ -576,6 +583,7 @@ document.addEventListener('click',e=>{
    case 'itab':sheet.itab=b.dataset.t;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ipack').hidden=sheet.itab!=='pack';document.getElementById('iphoto').hidden=sheet.itab!=='photo';updThumb();break;
    case 'icon':sheet.icon=b.dataset.k;sheet.itab='pack';document.querySelectorAll('#ipack button').forEach(x=>x.classList.toggle('on',x===b));updThumb();break;
    case 'new-les':if(!st.data.subjects.length){toast('Сначала добавьте предмет');break}lesSheet();break;
+   case 'toggle-les':{const l=st.data.lessons.find(x=>x.id===b.dataset.id);if(l){const{id,u,...rest}=l;put('lessons',id,{...rest,done:!l.done})}break}
    case 'edit-les':lesSheet(st.data.lessons.find(x=>x.id===b.dataset.id));break;
    case 'new-exp':expSheet();break;
    case 'edit-exp':expSheet(st.data.expenses.find(x=>x.id===b.dataset.id));break;
