@@ -108,6 +108,16 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .btools svg{width:18px;height:18px}
 .addrow{display:flex;gap:8px}
 .addrow button,.addrow label{flex:1;text-align:center;padding:9px;border:1px dashed var(--ink);border-radius:10px;font-size:14px;cursor:pointer}
+.editor{min-height:220px;border:1px solid var(--ink);border-radius:10px;padding:12px;background:#fff;font-size:16px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;outline:none;-webkit-user-select:text;user-select:text}
+.editor:empty:before{content:attr(data-ph);color:#9a9aa1}
+.editor img{display:block;width:100%;height:auto;border-radius:10px;margin:8px 0}
+.edbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.edbar label{font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;white-space:nowrap}
+.gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.gal .g{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--soft)}
+.gal .g img{width:100%;height:100%;object-fit:cover;display:block}
+.gal .g button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
+.gal .g button svg{width:16px;height:16px}
 .zoom{position:fixed;inset:0;z-index:50;background:#000;overflow:auto;-webkit-overflow-scrolling:touch}
 .zoom img{display:block;width:100%;margin:auto;min-height:100%;object-fit:contain}
 .zoom.big img{width:260%;max-width:none;min-height:0}
@@ -368,6 +378,7 @@ function setColor(id,h,from){
 }
 
 function render(){
+  if(st.edit)syncDraft();
   const app=document.getElementById('app');
   const ready=st.loaded.events&&st.loaded.subjects&&st.loaded.lessons&&st.loaded.expenses||st.offline;
   let h=st.view==='plan'?vPlan():st.view==='lessons'?vLessons():st.view==='interests'?vInterests():st.view==='money'?vMoney():vSettings();
@@ -606,7 +617,7 @@ const nrm=x=>String(x||'').toLowerCase().replace(/ё/g,'е');
 const noteText=x=>(x.blocks||[]).filter(b=>b.t==='text').map(b=>b.v).join('\n');
 function noteSub(x){const t=noteText(x).trim();return x.source?x.source+(t?' · '+t:''):t}
 function noteRow(x,sub){
-  const imgs=(x.blocks||[]).filter(b=>b.t==='img').length,fl=(x.files||[]).length;
+  const imgs=(x.blocks||[]).filter(b=>b.t==='img').length+(x.photos||[]).length,fl=(x.files||[]).length;
   return '<button class="nrow" data-act="open-note" data-id="'+x.id+'"><span class="tp">'+esc(x.title)+'</span>'+(sub?'<span class="sub">'+sub+'</span>':'')+
    ((imgs||fl)?'<span class="meta">'+(imgs?'Фото: '+imgs:'')+(fl?'<span>Файлы: '+fl+'</span>':'')+'</span>':'')+'</button>';
 }
@@ -651,35 +662,80 @@ function vNote(x){
     return top+'<article class="art"><h2 class="ntitle">'+esc(x.title)+'</h2>'+
      (src?'<div class="nsrc">'+(isUrl(src)?'<a href="'+esc(src.trim())+'" target="_blank" rel="noopener">'+esc(src.trim().replace(/^https?:\/\//,'').slice(0,60))+' ↗</a>':esc(src))+'</div>':'')+
      (x.blocks||[]).map(b=>b.t==='img'?imgHtml(b.f,1):'<div class="ntext">'+linkify(esc(b.v))+'</div>').join('')+
+     ((x.photos||[]).length?'<div class="stack" style="gap:10px"><div class="cap">Фото</div>'+x.photos.map(p=>imgHtml(p.f,1)).join('')+'</div>':'')+
      ((x.files||[]).length?'<div class="stack" style="gap:8px"><div class="cap">Файлы</div>'+x.files.map((m,i)=>'<div class="nfile">'+ico('file')+'<div class="fn"><div>'+esc(m.name)+'</div><div class="cap">'+fsize(m.size||0)+'</div></div><button class="btn ghost sm" data-act="file-open" data-i="'+i+'">Открыть</button><button class="btn ghost sm" data-act="file-save" data-i="'+i+'">Сохранить</button></div>').join('')+'</div>':'')+
      '</article>';
   }
-  const add=i=>'<div class="addrow"><button type="button" data-act="add-text" data-i="'+i+'">+ Текст</button><label for="addimg'+i+'">+ Фото</label><input id="addimg'+i+'" class="addimg" data-i="'+i+'" type="file" accept="image/*" hidden></div>';
   return top+'<div class="art">'+
    '<div class="f"><label for="n-title">Наименование</label><input id="n-title" value="'+esc(e.title)+'" placeholder="О чём эта запись"></div>'+
    '<div class="f"><label for="n-src">Источник информации</label><input id="n-src" value="'+esc(e.source)+'" placeholder="Книга, стр. 42 или https://…" autocapitalize="off"></div>'+
-   '<div class="cap">Содержание</div>'+(e.blocks.length?'':add(-1))+
-   e.blocks.map((b,i)=>'<div class="blk">'+(b.t==='img'?imgHtml(b.f,0):'<div class="f"><textarea data-blk="'+i+'" rows="4" placeholder="Текст…" aria-label="Текстовый блок '+(i+1)+'">'+esc(b.v)+'</textarea></div>')+
-     '<div class="btools"><button type="button" data-act="blk-up" data-i="'+i+'" aria-label="Выше">'+ico('up')+'</button><button type="button" data-act="blk-down" data-i="'+i+'" aria-label="Ниже">'+ico('down')+'</button><button type="button" data-act="blk-del" data-i="'+i+'" aria-label="Удалить блок">'+ico('trash')+'</button></div></div>'+add(i)).join('')+
+   '<div class="stack" style="gap:6px"><div class="edbar"><span class="cap" id="n-body-l">Содержание</span><label for="inlimg">Фото в текст из галереи</label><input id="inlimg" type="file" accept="image/*" hidden></div>'+
+   '<div id="n-body" class="editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="n-body-l" data-ph="Пишите или вставляйте текст и скопированные картинки">'+blocksToHtml(e.blocks)+'</div></div>'+
+   '<div class="cap">Фото к записи</div>'+
+   (e.photos.length?'<div class="gal">'+e.photos.map((p,i)=>'<div class="g">'+(URLS[p.f]?'<img src="'+URLS[p.f]+'" alt="">':'')+'<button type="button" data-act="ph-del" data-i="'+i+'" aria-label="Убрать фото">'+ico('x')+'</button></div>').join('')+'</div>':'')+
+   '<label class="btn ghost" for="addphoto">+ Добавить фото</label><input id="addphoto" type="file" accept="image/*" multiple hidden>'+
    '<div class="cap">Файлы</div>'+
    e.files.map((m,i)=>'<div class="nfile">'+ico('file')+'<div class="fn"><div>'+esc(m.name)+'</div><div class="cap">'+fsize(m.size||0)+'</div></div><button type="button" class="btn ghost sm" data-act="file-del" data-i="'+i+'" aria-label="Убрать файл">'+ico('x')+'</button></div>').join('')+
    '<label class="btn ghost" for="addfile">+ Прикрепить файл (PDF, EPUB…)</label><input id="addfile" type="file" hidden>'+
    (e.id?'<button class="btn del" data-act="note-del" id="ndel">Удалить запись</button>':'')+
    '</div>';
 }
+/* editor <-> blocks: the editor is one rich field; inside the app a note is still a list of text and image blocks */
+function blocksToHtml(blocks){
+  return (blocks||[]).map(b=>b.t==='img'?(URLS[b.f]?'':(ensureBlob(b.f),''))+'<img data-f="'+esc(b.f)+'" src="'+(URLS[b.f]||'')+'" alt="">':esc(b.v).replace(/\n/g,'<br>')).join('');
+}
+function editorToBlocks(el){
+  const out=[];let txt='';
+  const flush=()=>{const v=txt.replace(/^\n+|\n+$/g,'');if(v.trim())out.push({t:'text',v});txt=''};
+  const walk=n=>{
+    for(const c of n.childNodes){
+      if(c.nodeType===3)txt+=c.nodeValue.replace(/ /g,' ');
+      else if(c.nodeName==='BR')txt+='\n';
+      else if(c.nodeName==='IMG'){if(c.dataset.f){flush();out.push({t:'img',f:c.dataset.f})}}
+      else if(c.nodeType===1){const blk=/^(DIV|P|LI|H\d|BLOCKQUOTE)$/.test(c.nodeName);if(blk&&txt&&!txt.endsWith('\n'))txt+='\n';walk(c);if(blk&&!txt.endsWith('\n'))txt+='\n'}
+    }
+  };
+  walk(el);flush();return out;
+}
+function syncDraft(){const ed=document.getElementById('n-body');if(ed&&st.edit)st.edit.blocks=editorToBlocks(ed)}
+let edRange=null;
+document.addEventListener('selectionchange',()=>{const ed=document.getElementById('n-body'),sel=window.getSelection();if(ed&&sel&&sel.rangeCount&&ed.contains(sel.anchorNode))edRange=sel.getRangeAt(0).cloneRange()});
+function insertAtCaret(node){
+  const ed=document.getElementById('n-body');if(!ed)return;
+  let r=edRange&&ed.contains(edRange.startContainer)?edRange:null;
+  if(!r){r=document.createRange();r.selectNodeContents(ed);r.collapse(false)}
+  r.deleteContents();r.insertNode(node);r.setStartAfter(node);r.collapse(true);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);edRange=r.cloneRange();
+}
+async function storeImage(file){const blob=await shrink(file,2000),id=newId();await IDB.set('files',id,blob);URLS[id]=URL.createObjectURL(blob);return id}
+async function inlineImage(file){
+  if(!file||!st.edit)return;
+  try{const id=await storeImage(file);const img=document.createElement('img');img.dataset.f=id;img.src=URLS[id];img.alt='';insertAtCaret(img)}
+  catch(e){toast('Не удалось вставить фото')}
+}
+document.addEventListener('paste',e=>{
+  const ed=e.target&&e.target.closest&&e.target.closest('#n-body');if(!ed)return;
+  e.preventDefault();
+  const items=[...((e.clipboardData&&e.clipboardData.items)||[])];
+  const imgs=items.filter(i=>i.kind==='file'&&/^image\//.test(i.type)).map(i=>i.getAsFile()).filter(Boolean);
+  const sel=window.getSelection();if(sel.rangeCount)edRange=sel.getRangeAt(0).cloneRange();
+  if(imgs.length){(async()=>{for(const f of imgs)await inlineImage(f)})();return}
+  const t=(e.clipboardData&&e.clipboardData.getData('text/plain'))||'';
+  if(t)insertAtCaret(document.createTextNode(t));
+});
 async function saveNote(){
-  const e=st.edit;if(!e)return;
+  syncDraft();const e=st.edit;if(!e)return;
   const blocks=e.blocks.filter(b=>b.t!=='text'||b.v.trim());
   st.edit=null;
-  if(!e.title.trim()&&!e.source.trim()&&!blocks.length&&!e.files.length){if(!e.id)st.note=null;return}
+  if(!e.title.trim()&&!e.source.trim()&&!blocks.length&&!e.files.length&&!e.photos.length){if(!e.id)st.note=null;return}
   const id=e.id||newId(),ex=st.data.notes.find(y=>y.id===id);
   st.note=id;
-  await put('notes',id,{folderId:e.folderId,title:e.title.trim()||'Без названия',source:e.source.trim(),blocks,files:e.files,n:ex?.n??Date.now()});
+  await put('notes',id,{folderId:e.folderId,title:e.title.trim()||'Без названия',source:e.source.trim(),blocks,photos:e.photos,files:e.files,n:ex?.n??Date.now()});
 }
-function startEdit(x){st.edit=x?{id:x.id,folderId:x.folderId,title:x.title||'',source:x.source||'',blocks:JSON.parse(JSON.stringify(x.blocks||[])),files:JSON.parse(JSON.stringify(x.files||[]))}:{id:null,folderId:st.ifolder,title:'',source:'',blocks:[{t:'text',v:''}],files:[]}}
-async function addNoteImg(file,at){
-  if(!file||!st.edit)return;
-  try{const blob=await shrink(file,2000),id=newId();await IDB.set('files',id,blob);URLS[id]=URL.createObjectURL(blob);st.edit.blocks.splice(at+1,0,{t:'img',f:id});render()}
+function startEdit(x){st.edit=x?{id:x.id,folderId:x.folderId,title:x.title||'',source:x.source||'',blocks:JSON.parse(JSON.stringify(x.blocks||[])),files:JSON.parse(JSON.stringify(x.files||[])),photos:JSON.parse(JSON.stringify(x.photos||[]))}:{id:null,folderId:st.ifolder,title:'',source:'',blocks:[],files:[],photos:[]}}
+async function addNotePhotos(list){
+  if(!list||!st.edit)return;
+  try{for(const f of list){const id=await storeImage(f);st.edit.photos.push({f:id})}render()}
   catch(e){toast('Не удалось добавить фото')}
 }
 async function addNoteFile(file){
@@ -697,7 +753,7 @@ function openZoom(f){
 let up=new Set(),blobBusy=false;const pendingBlob=new Set();
 const ghFile=id=>'https://api.github.com/repos/'+encodeURIComponent(st.sync.owner)+'/'+encodeURIComponent(st.sync.repo)+'/contents/files/'+encodeURIComponent(id);
 async function saveUp(){try{await IDB.set('kv','up',[...up])}catch(e){}}
-function noteBlobs(){const ids=[];for(const x of st.data.notes){for(const b of x.blocks||[])if(b.t==='img')ids.push(b.f);for(const m of x.files||[])if(!(m.size>95e6))ids.push(m.f)}return ids}
+function noteBlobs(){const ids=[];for(const x of st.data.notes){for(const b of x.blocks||[])if(b.t==='img')ids.push(b.f);for(const p of x.photos||[])ids.push(p.f);for(const m of x.files||[])if(!(m.size>95e6))ids.push(m.f)}return ids}
 async function blobSync(){
   if(!st.sync.token||blobBusy)return;
   blobBusy=true;
@@ -767,6 +823,7 @@ document.addEventListener('click',e=>{
    case 'add-text':{const i=+b.dataset.i;st.edit.blocks.splice(i+1,0,{t:'text',v:''});render();const t=document.querySelector('textarea[data-blk="'+(i+1)+'"]');if(t)t.focus();break}
    case 'blk-up':case 'blk-down':{const i=+b.dataset.i,j=a==='blk-up'?i-1:i+1,B=st.edit.blocks;if(j>=0&&j<B.length){[B[i],B[j]]=[B[j],B[i]];render()}break}
    case 'blk-del':st.edit.blocks.splice(+b.dataset.i,1);render();break;
+   case 'ph-del':st.edit.photos.splice(+b.dataset.i,1);render();break;
    case 'file-del':st.edit.files.splice(+b.dataset.i,1);render();break;
    case 'note-del':{if(!st.ndel){st.ndel=1;b.textContent='Нажмите ещё раз, чтобы удалить';break}st.ndel=0;const id=st.edit&&st.edit.id;st.edit=null;st.note=null;if(id)del('notes',id);else render();toast('Удалено');break}
    case 'zoom':openZoom(b.dataset.f);break;
@@ -829,7 +886,8 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='bgfile')uploadImg(t.files[0],id=>{saveCfg({bgAsset:id,bgMode:'photo'});toast('Фон обновлён')});
   if(t.id==='importfile'){importBackup(t.files[0]);t.value=''}
-  if(t.classList&&t.classList.contains('addimg')){addNoteImg(t.files[0],+t.dataset.i);t.value=''}
+  if(t.id==='inlimg'){inlineImage(t.files[0]);t.value=''}
+  if(t.id==='addphoto'){addNotePhotos([...t.files]);t.value=''}
   if(t.id==='addfile'){addNoteFile(t.files[0]);t.value=''}
   if(t.id==='ifile')uploadImg(t.files[0],id=>{if(!sheet)return;sheet.iconAsset=id;sheet.itab='photo';updThumb();toast('Иконка загружена')});
 });
