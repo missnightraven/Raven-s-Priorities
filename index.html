@@ -63,6 +63,17 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .chip .x{flex:1;min-width:0;overflow-wrap:anywhere}
 .chip svg{width:18px;height:18px;flex:none}
 .chip.once{background:var(--card);border:1.5px dashed}
+.lchip{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-left:6px solid}
+.lchip .li{width:24px;height:24px;flex:none;display:flex;align-items:center;justify-content:center}
+.lchip .li svg{width:22px;height:22px}.lchip .li img{width:24px;height:24px;border-radius:6px;object-fit:cover}
+.lchip .x{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.lchip .s{font-size:12px;opacity:.8}
+.lchip .tp{font-weight:600;overflow-wrap:anywhere;line-height:1.3}
+.lchip .ck{width:22px;height:22px;border-radius:7px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;flex:none;opacity:.8}
+.lchip .ck svg{width:15px;height:15px}
+.sq{width:6px;height:6px;border-radius:1.5px}
+.task .dt{font-size:13px;font-family:var(--display);opacity:.85}
+.task .dt b{font-weight:700}
 .empty{padding:18px 12px;text-align:center;color:var(--muted);font-size:14px;background:var(--card);border-radius:12px}
 .wk{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:start}
 .wk .lbl{font-family:var(--display);font-size:13px;padding-top:10px;line-height:1.3}
@@ -292,9 +303,15 @@ function occurs(e,d){
 }
 const eventsOn=d=>st.data.events.filter(e=>occurs(e,d)).sort((a,b)=>(a.from||'99').localeCompare(b.from||'99'));
 
+const lessonsOn=d=>st.data.lessons.filter(l=>l.date===d&&st.data.subjects.some(s=>s.id===l.subjectId)).sort((a,b)=>(a.n??0)-(b.n??0));
+const durTxt=m=>{m=+m||0;if(!m)return '';const h=Math.floor(m/60),r=m%60;return (h?h+' ч':'')+(h&&r?' ':'')+(r?r+' мин':'')};
+function lchip(l){
+  const s=st.data.subjects.find(x=>x.id===l.subjectId),c=s.color||P[3],d=!!l.done;
+  return '<button class="lchip" data-act="plan-les" data-id="'+l.id+'" style="border-left-color:'+esc(c)+(d?';background:'+esc(c)+';color:'+onC(c)+';border-color:'+esc(c):'')+'"><span class="li">'+subjIcon(s)+'</span><span class="x"><span class="s">'+esc(s.name)+(l.dur?' · '+durTxt(l.dur):'')+'</span><span class="tp">'+esc(l.topic)+'</span></span><span class="ck" aria-label="'+(d?'Выполнено':'Не выполнено')+'">'+(d?ico('check'):'')+'</span></button>';
+}
 function dots(d){
-  const ev=eventsOn(d).slice(0,3);
-  return ev.map(e=>e.type==='once'?'<i class="ring" style="border-color:'+esc(e.color)+'"></i>':'<i class="dot" style="background:'+esc(e.color)+'"></i>').join('');
+  const ev=eventsOn(d).slice(0,3),ls=lessonsOn(d).slice(0,3);
+  return ls.map(l=>{const s=st.data.subjects.find(x=>x.id===l.subjectId);return '<i class="sq" style="background:'+esc(s.color||P[3])+'"></i>'}).join('')+ev.slice(0,Math.max(0,4-ls.length)).map(e=>e.type==='once'?'<i class="ring" style="border-color:'+esc(e.color)+'"></i>':'<i class="dot" style="background:'+esc(e.color)+'"></i>').join('');
 }
 function monthGrid(y,m,mini){
   const first=new Date(y,m,1),n=new Date(y,m+1,0).getDate();let h='<div class="grid'+(mini?' mini':'')+'">';
@@ -308,16 +325,18 @@ function chip(e){
   return '<button class="chip" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="edit-ev" data-id="'+e.id+'"><span class="t">'+t+'</span><span class="x">'+esc(e.title)+'</span>'+ico('repeat')+'</button>';
 }
 function dayList(d){
-  const ev=eventsOn(d);
-  return '<div class="cap" style="padding-top:4px">'+esc(dLong(d))+'</div>'+(ev.length?'<div class="stack" style="gap:7px">'+ev.map(chip).join('')+'</div>':'<div class="empty">На этот день ничего нет. Нажмите «+», чтобы добавить событие.</div>');
+  const ev=eventsOn(d),ls=lessonsOn(d),tot=ls.reduce((a,l)=>a+(+l.dur||0),0);
+  return '<div class="cap" style="padding-top:4px">'+esc(dLong(d))+'</div>'+
+   (ev.length?'<div class="stack" style="gap:7px">'+ev.map(chip).join('')+'</div>':'')+
+   (ls.length?'<div class="cap">Уроки'+(tot?' · '+durTxt(tot):'')+'</div><div class="stack" style="gap:7px">'+ls.map(lchip).join('')+'</div>':'')+
+   (!ev.length&&!ls.length?'<div class="empty">На этот день ничего нет. Нажмите «+», чтобы добавить событие.</div>':'');
 }
-
 function vPlan(){
   const c=parse(st.cur);let title,body;
   if(st.mode==='week'){
     const ws=weekStart(parse(st.sel)),we=addD(ws,6);
     title=ws.getDate()+' '+(ws.getMonth()!==we.getMonth()?MONG[ws.getMonth()]+' ':'')+'– '+we.getDate()+' '+MONG[we.getMonth()];
-    body='<div class="stack">'+[0,1,2,3,4,5,6].map(i=>{const d=ymd(addD(ws,i)),ev=eventsOn(d);return '<div class="wk"><button class="lbl" data-act="sel" data-d="'+d+'" style="text-align:left'+(d===today()?';font-weight:700':'')+'">'+DOW[i]+'<br>'+dNum(d)+'</button><div class="stack" style="gap:6px">'+(ev.length?ev.map(chip).join(''):'<div class="cap" style="padding:10px 0">—</div>')+'</div></div>'}).join('')+'</div>';
+    body='<div class="stack">'+[0,1,2,3,4,5,6].map(i=>{const d=ymd(addD(ws,i)),ev=eventsOn(d),ls=lessonsOn(d);return '<div class="wk"><button class="lbl" data-act="sel" data-d="'+d+'" style="text-align:left'+(d===today()?';font-weight:700':'')+'">'+DOW[i]+'<br>'+dNum(d)+'</button><div class="stack" style="gap:6px">'+(ev.length||ls.length?ev.map(chip).join('')+ls.map(lchip).join(''):'<div class="cap" style="padding:10px 0">—</div>')+'</div></div>'}).join('')+'</div>';
   }else if(st.mode==='month'){
     title=MON[c.getMonth()]+' '+c.getFullYear();
     body='<div class="panel"><div class="dow">'+DOW.map(x=>'<span>'+x+'</span>').join('')+'</div>'+monthGrid(c.getFullYear(),c.getMonth())+'</div>'+legend()+dayList(st.sel);
@@ -329,20 +348,22 @@ function vPlan(){
   return '<div class="top"><h1>'+esc(title)+'</h1><button class="ib" data-act="prev" aria-label="Назад">'+ico('left')+'</button><button class="ib" data-act="next" aria-label="Вперёд">'+ico('right')+'</button><button class="ib dim" data-act="settings" aria-label="Оформление">'+ico('gear')+'</button><button class="ib" data-act="new-ev" aria-label="Добавить событие">'+ico('plus')+'</button></div>'+
   '<div class="stack"><div class="seg" role="tablist">'+[['week','Неделя'],['month','Месяц'],['q','3 месяца']].map(x=>'<button class="'+(st.mode===x[0]?'on':'')+'" data-act="mode" data-m="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+body+'</div>';
 }
-const legend=()=>'<div style="display:flex;gap:16px;font-size:13px;color:var(--muted)"><span style="display:flex;align-items:center;gap:6px"><i class="dot" style="background:var(--ink)"></i>Повторяющееся</span><span style="display:flex;align-items:center;gap:6px"><i class="ring" style="border-color:var(--ink)"></i>Разовое</span></div>';
+const legend=()=>'<div style="display:flex;gap:16px;font-size:13px;color:var(--muted)"><span style="display:flex;align-items:center;gap:6px"><i class="dot" style="background:var(--ink)"></i>Повторяющееся</span><span style="display:flex;align-items:center;gap:6px"><i class="ring" style="border-color:var(--ink)"></i>Разовое</span><span style="display:flex;align-items:center;gap:6px"><i class="sq" style="background:var(--ink)"></i>Урок</span></div>';
 
 function subjIcon(s,size){
   if(s.iconAsset)return '<img src="'+imgUrl(s.iconAsset)+'" alt="">';
   return ico(s.icon||'book',PACK);
 }
-const tasksOf=sid=>st.data.lessons.filter(l=>l.subjectId===sid).sort((a,b)=>(a.n??1e15)-(b.n??1e15)||(a.date||'').localeCompare(b.date||'')||(a.id<b.id?-1:1));
+const tasksOf=sid=>st.data.lessons.filter(l=>l.subjectId===sid).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')||(a.n??1e15)-(b.n??1e15)||(a.id<b.id?-1:1));
+const lesDate=l=>{if(!l.date&&!l.dur)return '';const d=l.date?(l.date===today()?'<b>Сегодня</b>':esc(DOW[m0(parse(l.date))]+', '+parse(l.date).getDate()+' '+MONG[parse(l.date).getMonth()])):'';return d+(d&&l.dur?' · ':'')+(l.dur?durTxt(l.dur):'')};
 function nextLesson(sid){return tasksOf(sid).find(l=>!l.done)}
 function vLessons(){
   if(st.subj){const s=st.data.subjects.find(x=>x.id===st.subj);if(s)return vSubject(s);st.subj=null}
   const list=[...st.data.subjects].sort((a,b)=>(a.order??0)-(b.order??0));
   return '<div class="top"><h1>Уроки</h1><button class="ib" data-act="new-subj" aria-label="Добавить предмет">'+ico('plus')+'</button></div><div class="stack"><div class="cap">Предметы</div>'+
   (list.length?list.map(s=>{const n=nextLesson(s.id),c=s.color||P[3];return '<button class="subj" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="open-subj" data-id="'+s.id+'" data-hold="edit-subj"><span class="ico">'+subjIcon(s)+'</span><span class="txt"><span class="nm">'+esc(s.name)+'</span><span class="sub">'+(n?'Дальше: '+esc(n.topic):(tasksOf(s.id).length?'Все задания выполнены':'Заданий пока нет'))+'</span></span>'+ico('right')+'</button>'}).join('')+'<div class="note">Удерживайте предмет, чтобы изменить его</div>'
-  :'<div class="empty">Добавьте первый предмет кнопкой «+»: например, математику или физику.</div>')+'</div>';
+  :'<div class="empty">Добавьте первый предмет кнопкой «+»: например, математику или физику.</div>')+
+  '<label class="btn" for="lesimport" style="border:1px dashed var(--ink);margin-top:6px">Импорт заданий из файла</label><input id="lesimport" type="file" accept=".json,application/json" hidden></div>';
 }
 function weekLabel(d){const ws=weekStart(parse(d)),we=addD(ws,6);return 'Неделя '+ws.getDate()+(ws.getMonth()!==we.getMonth()?' '+MONG[ws.getMonth()]:'')+'–'+we.getDate()+' '+MONG[we.getMonth()]}
 function vSubject(s){
@@ -350,7 +371,7 @@ function vSubject(s){
   const h=ls.map(l=>{const d=!!l.done;
     return '<div class="task'+(d?' done':'')+'" style="'+(d?'background:'+esc(c)+';color:'+fg:'')+'">'+
       '<button class="ck" data-act="toggle-les" data-id="'+l.id+'" aria-pressed="'+d+'" aria-label="'+(d?'Отметить как невыполненное':'Отметить как выполненное')+': '+esc(l.topic)+'"><span>'+(d?ico('check'):'')+'</span></button>'+
-      '<button class="bd" data-act="edit-les" data-id="'+l.id+'"><span class="tp">'+esc(l.topic)+'</span>'+(l.desc?'<span class="mt clamp">'+esc(l.desc)+'</span>':'')+'</button></div>'}).join('');
+      '<button class="bd" data-act="edit-les" data-id="'+l.id+'"><span class="tp">'+esc(l.topic)+'</span>'+(lesDate(l)?'<span class="dt">'+lesDate(l)+'</span>':'')+(l.desc?'<span class="mt clamp">'+esc(l.desc)+'</span>':'')+'</button></div>'}).join('');
   return '<div class="top"><button class="ib" data-act="back" aria-label="К предметам">'+ico('left')+'</button><h1>'+esc(s.name)+'</h1><button class="ib" data-act="edit-subj" data-id="'+s.id+'" aria-label="Изменить предмет">'+ico('pencil')+'</button><button class="ib" data-act="new-les" aria-label="Добавить задание">'+ico('plus')+'</button></div>'+
   '<div class="stack" style="gap:8px">'+(h||'<div class="empty">Заданий пока нет. Добавьте первое кнопкой «+».</div>')+'</div>';
 }
@@ -461,10 +482,12 @@ function lesSheet(l){
   const src=l.material||'';
   openSheet({kind:'les',id:l.id,sid:l.subjectId,full:1},head(n?'Новое задание':'Задание')+
    '<div class="f"><label for="l-topic">Наименование</label><input id="l-topic" value="'+esc(l.topic)+'" placeholder="Определитель матрицы"></div>'+
+   '<div class="row2 f"><div><label for="l-date">Дата в «Плане»</label><input id="l-date" type="date" value="'+esc(l.date||'')+'"></div><div><label for="l-dur">Длительность, мин</label><input id="l-dur" inputmode="numeric" class="mono" value="'+esc(l.dur||'')+'" placeholder="45"></div></div>'+
    '<div class="f"><label for="l-desc">Описание</label><textarea id="l-desc" rows="6" placeholder="Что нужно сделать, по шагам">'+esc(l.desc||'')+'</textarea></div>'+
    '<div class="f"><label for="l-mat">Источник информации</label><input id="l-mat" value="'+esc(src)+'" placeholder="Учебник, стр. 42 или https://…" autocapitalize="off">'+
      '<a class="lnk" id="l-link" href="'+(isUrl(src)?esc(src.trim()):'#')+'" target="_blank" rel="noopener"'+(isUrl(src)?'':' hidden')+'>Открыть ссылку ↗</a></div>'+
    '<div class="f"><label for="l-stop">Дополнительно</label><textarea id="l-stop" rows="4" placeholder="Заметки, вопросы, что получилось">'+esc(l.stop||'')+'</textarea></div>'+
+   (n?'':'<button class="btn ghost" data-act="les-done" id="lesdone">'+(l.done?'✓ Выполнено · снять отметку':'Отметить выполненным')+'</button>')+
    '<button class="btn pri" data-act="save-les">Сохранить</button>'+(n?'':delBtn('Удалить задание')));
 }
 function expSheet(e){
@@ -505,7 +528,8 @@ async function save(){
     const topic=val('l-topic');if(!topic){toast('Введите наименование задания');return}
     const ex=st.data.lessons.find(x=>x.id===s.id),sid=s.sid||st.subj;
     const nn=ex&&ex.subjectId===sid&&ex.n!=null?ex.n:Math.max(0,...st.data.lessons.filter(x=>x.subjectId===sid).map(x=>x.n??0))+1;
-    await put('lessons',s.id||newId('lessons'),{subjectId:sid,topic,desc:val('l-desc'),material:val('l-mat'),stop:val('l-stop'),done:!!(ex&&ex.done),n:nn});
+    const dur=parseInt(val('l-dur'))||null;
+    await put('lessons',s.id||newId('lessons'),{subjectId:sid,topic,desc:val('l-desc'),material:val('l-mat'),stop:val('l-stop'),date:val('l-date'),dur,done:!!(ex&&ex.done),n:nn});
   }else if(s.kind==='exp'){
     const amount=parseFloat(val('x-amount').replace(/\s/g,'').replace(',','.'));if(!(amount>0)){toast('Введите сумму');return}
     const ex=st.data.expenses.find(x=>x.id===s.id);
@@ -520,6 +544,22 @@ async function remove(){
   if(s.kind==='fold'){for(const x of st.data.notes.filter(x=>x.folderId===s.id))await del('notes',x.id);st.ifolder=null}
   if(s.kind==='subj'){for(const l of st.data.lessons.filter(l=>l.subjectId===s.id))await del('lessons',l.id);st.subj=null}
   await del(map[s.kind],s.id);closeSheet();toast('Удалено');
+}
+/* adds lessons from a schedule file; never replaces anything. Same file twice = no duplicates (fixed ids). */
+async function importLessons(file){
+  if(!file)return;
+  let j;try{j=JSON.parse(await file.text());if(j.app!=='ravens-priorities-lessons'||!Array.isArray(j.lessons))throw 0}catch(e){toast('Это не файл с заданиями');return}
+  const ops=[],ids={},key=x=>nrm(x).trim();let order=st.data.subjects.length,made=0,added=0;
+  st.data.subjects.forEach(s=>ids[key(s.name)]=s.id);
+  for(const s of j.subjects||[]){const k=key(s.name);if(ids[k])continue;const id=newId();ids[k]=id;ops.push(['put','subjects',id,{name:s.name,icon:PACK[s.icon]?s.icon:'book',iconAsset:null,color:okHex(s.color||'')?s.color:P[order%P.length],order:order++}]);made++}
+  let n=Math.max(0,...st.data.lessons.map(x=>x.n??0));
+  for(const l of j.lessons){
+    const id='imp-'+l.key,sid=ids[key(l.subject||'')];
+    if(!sid||st.data.lessons.some(x=>x.id===id)||(st.tomb.lessons||{})[id])continue;
+    ops.push(['put','lessons',id,{subjectId:sid,topic:l.topic||'Без названия',desc:l.desc||'',material:l.material||'',stop:l.extra||'',date:l.date||'',dur:+l.dur||null,done:false,n:++n}]);added++;
+  }
+  if(!ops.length){toast('Эти задания уже добавлены');return}
+  await commit(ops);toast('Добавлено заданий: '+added+(made?', новых предметов: '+made:''));
 }
 async function shrink(file,max){
   try{const bmp=await createImageBitmap(file);const k=Math.min(1,(max||1600)/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.86))}catch(e){return file}
@@ -1064,6 +1104,8 @@ document.addEventListener('click',e=>{
    case 'edit-subj':{const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x);break}
    case 'itab':sheet.itab=b.dataset.t;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ipack').hidden=sheet.itab!=='pack';document.getElementById('iphoto').hidden=sheet.itab!=='photo';updThumb();break;
    case 'icon':sheet.icon=b.dataset.k;sheet.itab='pack';document.querySelectorAll('#ipack button').forEach(x=>x.classList.toggle('on',x===b));updThumb();break;
+   case 'plan-les':{const l=st.data.lessons.find(x=>x.id===b.dataset.id);if(l){st.view='lessons';st.subj=l.subjectId;window.scrollTo(0,0);render();lesSheet(l)}break}
+   case 'les-done':{const l=sheet&&st.data.lessons.find(x=>x.id===sheet.id);if(l){const{id,u,...rest}=l;put('lessons',id,{...rest,done:!l.done}).then(()=>{const x=document.getElementById('lesdone');if(x)x.textContent=!l.done?'✓ Выполнено · снять отметку':'Отметить выполненным'})}break}
    case 'new-les':if(!st.data.subjects.length){toast('Сначала добавьте предмет');break}lesSheet();break;
    case 'toggle-les':{const l=st.data.lessons.find(x=>x.id===b.dataset.id);if(l){const{id,u,...rest}=l;put('lessons',id,{...rest,done:!l.done})}break}
    case 'edit-les':lesSheet(st.data.lessons.find(x=>x.id===b.dataset.id));break;
@@ -1103,6 +1145,7 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='bgfile')uploadImg(t.files[0],id=>{saveCfg({bgAsset:id,bgMode:'photo'});toast('Фон обновлён')});
   if(t.id==='importfile'){importBackup(t.files[0]);t.value=''}
+  if(t.id==='lesimport'){importLessons(t.files[0]);t.value=''}
   if(t.id==='inlimg'){inlineImage(t.files[0]);t.value=''}
   if(t.id==='addphoto'){addNotePhotos([...t.files]);t.value=''}
   if(t.id==='addfile'){addNoteFile(t.files[0]);t.value=''}
