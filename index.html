@@ -1104,7 +1104,7 @@ document.addEventListener('click',e=>{
    case 'edit-subj':{const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x);break}
    case 'itab':sheet.itab=b.dataset.t;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ipack').hidden=sheet.itab!=='pack';document.getElementById('iphoto').hidden=sheet.itab!=='photo';updThumb();break;
    case 'icon':sheet.icon=b.dataset.k;sheet.itab='pack';document.querySelectorAll('#ipack button').forEach(x=>x.classList.toggle('on',x===b));updThumb();break;
-   case 'plan-les':{const l=st.data.lessons.find(x=>x.id===b.dataset.id);if(l){st.view='lessons';st.subj=l.subjectId;window.scrollTo(0,0);render();lesSheet(l)}break}
+   case 'plan-les':{const l=st.data.lessons.find(x=>x.id===b.dataset.id);if(l)lesSheet(l);break}
    case 'les-done':{const l=sheet&&st.data.lessons.find(x=>x.id===sheet.id);if(l){const{id,u,...rest}=l;put('lessons',id,{...rest,done:!l.done}).then(()=>{const x=document.getElementById('lesdone');if(x)x.textContent=!l.done?'✓ Выполнено · снять отметку':'Отметить выполненным'})}break}
    case 'new-les':if(!st.data.subjects.length){toast('Сначала добавьте предмет');break}lesSheet();break;
    case 'toggle-les':{const l=st.data.lessons.find(x=>x.id===b.dataset.id);if(l){const{id,u,...rest}=l;put('lessons',id,{...rest,done:!l.done})}break}
