@@ -157,6 +157,12 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .wchip{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:7px 12px;border-radius:10px;border:1px solid var(--ink);background:var(--card);font-size:15px;font-family:var(--display);overflow-wrap:anywhere;text-align:left}
 .wchip.ant{border-style:dashed}
 .wchip.add{font-family:var(--body);font-size:14px;border-style:dashed;color:var(--muted);border-color:var(--muted)}
+.wls{display:flex;flex-direction:column;gap:8px}
+.wl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;width:100%;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.wl .wchip{min-height:34px;padding:5px 10px}
+.wl .wn{font-size:14px;line-height:1.45;color:#3d3d44;padding-top:6px;white-space:pre-wrap;overflow-wrap:anywhere}
+.wl .wn.e{color:#9a9aa1}
+.wl.add{display:block;text-align:center;border-style:dashed;color:var(--muted);font-size:14px;padding:11px}
 .wchip .rm{display:flex;margin:-6px -8px -6px 0;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px}
 .wchip .rm svg{width:16px;height:16px}
 .scrim{position:fixed;inset:0;background:rgba(17,17,20,.35);z-index:30}
@@ -782,7 +788,7 @@ const lkey=(a,b)=>a<b?a+'~'+b:b+'~'+a;
 const wById=id=>st.data.words.find(x=>x.id===id);
 const wText=x=>(x.blocks||[]).filter(b=>b.t==='text').map(b=>b.v).join('\n');
 const byEn=(a,b)=>nrm(a.en).localeCompare(nrm(b.en),'en');
-function linksOf(id){return st.data.wlinks.filter(l=>l.a===id||l.b===id).map(l=>({w:l.a===id?l.b:l.a,t:l.t})).filter(l=>wById(l.w))}
+function linksOf(id){return st.data.wlinks.filter(l=>l.a===id||l.b===id).map(l=>({w:l.a===id?l.b:l.a,t:l.t,note:l.note||''})).filter(l=>wById(l.w))}
 function hlq(text,qq){const t=String(text||''),i=nrm(t).indexOf(qq);if(!qq||i<0)return null;const a=Math.max(0,i-40),b=Math.min(t.length,i+qq.length+70);
   return (a>0?'…':'')+esc(t.slice(a,i))+'<mark>'+esc(t.slice(i,i+qq.length))+'</mark>'+esc(t.slice(i+qq.length,b))+(b<t.length?'…':'')}
 function wordRow(x,qq){
@@ -817,13 +823,23 @@ function vWords(){
    '<div id="wresults">'+wordsListHtml()+'</div></div>';
 }
 function chipsRead(L,t,label){
-  const ws=L.filter(l=>l.t===t).map(l=>wById(l.w)).sort(byEn);if(!ws.length)return '';
-  return '<div><div class="wlbl">'+label+'</div><div class="wchips">'+ws.map(w=>'<button class="wchip'+(t==='ant'?' ant':'')+'" lang="en" data-act="goto-word" data-id="'+w.id+'">'+esc(w.en)+'</button>').join('')+'</div></div>';
+  const ls=L.filter(l=>l.t===t).map(l=>({...l,x:wById(l.w)})).sort((a,b)=>byEn(a.x,b.x));if(!ls.length)return '';
+  return '<div><div class="wlbl">'+label+'</div><div class="wls">'+ls.map(l=>'<div class="wl"><button class="wchip'+(t==='ant'?' ant':'')+'" lang="en" data-act="goto-word" data-id="'+l.x.id+'">'+esc(l.x.en)+'</button>'+(l.note?'<span class="wn">'+esc(l.note)+'</span>':'<span></span>')+'</div>').join('')+'</div></div>';
 }
+const lkName=l=>l.stub?l.en:(wById(l.w)||{}).en||'';
 function chipsEdit(t,label){
-  const e=st.edit,ls=e.links.filter(l=>l.t===t).map(l=>({...l,name:l.stub?l.en:(wById(l.w)||{}).en||''})).sort((a,b)=>nrm(a.name).localeCompare(nrm(b.name),'en'));
-  return '<div><div class="wlbl">'+label+'</div><div class="wchips">'+ls.map(l=>'<span class="wchip'+(t==='ant'?' ant':'')+'" lang="en">'+esc(l.name)+'<button type="button" class="rm" data-act="lk-del" data-w="'+l.w+'" aria-label="Убрать связь с '+esc(l.name)+'">'+ico('x')+'</button></span>').join('')+
-   '<button type="button" class="wchip add" data-act="lk-add" data-t="'+t+'">+ Добавить</button></div></div>';
+  const ls=st.edit.links.filter(l=>l.t===t).sort((a,b)=>nrm(lkName(a)).localeCompare(nrm(lkName(b)),'en'));
+  return '<div><div class="wlbl">'+label+'</div><div class="wls">'+ls.map(l=>'<button type="button" class="wl" data-act="lk-open" data-w="'+l.w+'" aria-label="Связь с '+esc(lkName(l))+': заметка о разнице"><span class="wchip'+(t==='ant'?' ant':'')+'" lang="en">'+esc(lkName(l))+'</span>'+
+    (l.note?'<span class="wn">'+esc(l.note)+'</span>':'<span class="wn e">+ разница в употреблении</span>')+'</button>').join('')+
+   '<button type="button" class="wl add" data-act="lk-add" data-t="'+t+'">+ Добавить '+(t==='syn'?'синоним':'антоним')+'</button></div></div>';
+}
+function noteSheet(w){
+  const e=st.edit,l=e&&e.links.find(x=>x.w===w);if(!l)return;
+  openSheet({kind:'lkn',w,id:w},head('<span lang="en">'+esc(e.en.trim()||'…')+' '+(l.t==='syn'?'≈':'≠')+' '+esc(lkName(l))+'</span>')+
+   '<div class="f"><label for="lk-note">Разница в употреблении</label><textarea id="lk-note" rows="3" placeholder="'+(l.t==='syn'?'Например: stunning сильнее, про ошеломляющее впечатление':'Например: hideous очень сильное, мягче — ugly')+'">'+esc(l.note||'')+'</textarea>'+
+   '<div class="cap" style="margin-top:6px">Заметка видна в обеих карточках — у «'+esc(e.en.trim()||'этого слова')+'» и у «'+esc(lkName(l))+'».</div></div>'+
+   '<button class="btn pri" data-act="lk-note-save">Сохранить</button><button class="btn del" data-act="lk-del" data-w="'+l.w+'">Убрать связь</button>');
+  setTimeout(()=>{const t=document.getElementById('lk-note');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}},60);
 }
 function vWord(x){
   const e=st.edit&&st.edit.kind==='word'?st.edit:null;
@@ -872,7 +888,7 @@ async function saveWord(){
   ops.push(['put','words',e.id,{en:en||'(без слова)',ru,blocks,source,n:ex?.n??now}]);
   const want=new Map(e.links.map(l=>[lkey(e.id,l.w),l]));
   for(const l of st.data.wlinks)if((l.a===e.id||l.b===e.id)&&!want.has(l.id))ops.push(['del','wlinks',l.id]);
-  for(const[k,l]of want){const cur=st.data.wlinks.find(y=>y.id===k);if(!cur||cur.t!==l.t){const[a,b]=k.split('~');ops.push(['put','wlinks',k,{a,b,t:l.t}])}}
+  for(const[k,l]of want){const cur=st.data.wlinks.find(y=>y.id===k);const note=(l.note||'').trim();if(!cur||cur.t!==l.t||(cur.note||'')!==note){const[a,b]=k.split('~');ops.push(['put','wlinks',k,{a,b,t:l.t,note}])}}
   await commit(ops);
 }
 function linkSheet(t){
@@ -1004,7 +1020,9 @@ document.addEventListener('click',e=>{
    case 'lk-add':linkSheet(b.dataset.t);break;
    case 'lk-pick':{const t=sheet&&sheet.t;if(st.edit&&t)st.edit.links.push({w:b.dataset.w,t});closeSheet();render();break}
    case 'lk-new':{const t=sheet&&sheet.t,q=val('lk-q');if(st.edit&&t&&q)st.edit.links.push({w:newId(),t,en:q,stub:1});closeSheet();render();break}
-   case 'lk-del':if(st.edit)st.edit.links=st.edit.links.filter(l=>l.w!==b.dataset.w);render();break;
+   case 'lk-del':if(st.edit)st.edit.links=st.edit.links.filter(l=>l.w!==b.dataset.w);closeSheet();render();break;
+   case 'lk-open':noteSheet(b.dataset.w);break;
+   case 'lk-note-save':{const l=st.edit&&sheet&&st.edit.links.find(x=>x.w===sheet.w);if(l)l.note=val('lk-note');closeSheet();render();break}
    case 'reorder':st.reorder=true;st.q='';window.scrollTo(0,0);render();break;
    case 'reorder-done':st.reorder=false;render();break;
    case 'open-folder':st.ifolder=b.dataset.id;st.note=null;window.scrollTo(0,0);render();break;
