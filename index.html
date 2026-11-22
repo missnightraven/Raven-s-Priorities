@@ -118,6 +118,10 @@ svg.i{display:block;width:22px;height:22px;flex:none}
 .gal .g img{width:100%;height:100%;object-fit:cover;display:block}
 .gal .g button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
 .gal .g button svg{width:16px;height:16px}
+.rrow{cursor:default}
+.rrow.drag{position:relative;z-index:3;box-shadow:0 10px 24px rgba(0,0,0,.28);transform:scale(1.02)}
+.grip{flex:none;width:44px;height:44px;margin:-8px -6px -8px 0;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;border-radius:10px}
+.grip svg{width:24px;height:24px}
 .zoom{position:fixed;inset:0;z-index:50;background:#000;overflow:auto;-webkit-overflow-scrolling:touch}
 .zoom img{display:block;width:100%;margin:auto;min-height:100%;object-fit:contain}
 .zoom.big img{width:260%;max-width:none;min-height:0}
@@ -212,7 +216,7 @@ const IC={
  wallet:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
  repeat:'<path d="M4 11V9a3 3 0 0 1 3-3h12l-3-3M20 13v2a3 3 0 0 1-3 3H5l3 3"/>',
  point:'<circle cx="12" cy="12" r="3" fill="currentColor"/>',
- pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>',bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',up:'<path d="M12 19V5M6 11l6-6 6 6"/>',down:'<path d="M12 5v14M6 13l6 6 6-6"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',file:'<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
+ pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',check:'<path d="M5 12.5l4.5 4.5L19 7"/>',grip:'<path d="M5 8h14M5 12h14M5 16h14"/>',bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',up:'<path d="M12 19V5M6 11l6-6 6 6"/>',down:'<path d="M12 5v14M6 13l6 6 6-6"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',file:'<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>',flag:'<path d="M5 21V4h11l-2 4 2 4H5"/>',
  upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',photo:'<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-8 8"/>'
 };
 const PACK={
@@ -624,6 +628,8 @@ function noteRow(x,sub){
 function foldersHtml(){
   const list=[...st.data.ifolders].sort((a,b)=>(a.order??0)-(b.order??0));
   if(!list.length)return '<div class="empty">Создайте первую папку кнопкой «+».</div>';
+  if(st.reorder)return '<div class="note" style="text-align:left;margin-bottom:8px">Перетаскивайте папки за значок справа. Когда закончите, нажмите «Готово».</div><div class="stack" id="rlist">'+list.map(f=>{const c=f.color||P[3];
+    return '<div class="subj rrow" data-id="'+f.id+'" style="background:'+esc(c)+';color:'+onC(c)+'"><span class="ico">'+subjIcon(f)+'</span><span class="txt"><span class="nm">'+esc(f.name)+'</span></span><span class="grip" aria-label="Перетащить: '+esc(f.name)+'" role="button" tabindex="0">'+ico('grip')+'</span></div>'}).join('')+'</div>';
   return '<div class="stack">'+list.map(f=>{const c=f.color||P[3],k=notesOf(f.id).length;
     return '<button class="subj" style="background:'+esc(c)+';color:'+onC(c)+'" data-act="open-folder" data-id="'+f.id+'" data-hold="fold"><span class="ico">'+subjIcon(f)+'</span><span class="txt"><span class="nm">'+esc(f.name)+'</span><span class="sub">'+(k?k+' '+(k%10===1&&k%100!==11?'запись':(k%10>=2&&k%10<=4&&(k%100<10||k%100>=20))?'записи':'записей'):'Пусто')+'</span></span>'+ico('right')+'</button>'}).join('')+
    '<div class="note">Удерживайте папку, чтобы изменить её</div></div>';
@@ -642,7 +648,8 @@ function searchHtml(q){
 function vInterests(){
   if(st.note){const x=st.note==='new'?null:st.data.notes.find(y=>y.id===st.note);if(st.edit||x)return vNote(x);st.note=null}
   if(st.ifolder){const f=st.data.ifolders.find(y=>y.id===st.ifolder);if(f)return vFolder(f);st.ifolder=null}
-  return '<div class="top"><h1>Интересы</h1><button class="ib" data-act="new-folder" aria-label="Добавить папку">'+ico('plus')+'</button></div>'+
+  if(st.reorder)return '<div class="top"><h1>Порядок папок</h1><button class="btn-done" data-act="reorder-done">Готово</button></div>'+foldersHtml();
+  return '<div class="top"><h1>Интересы</h1><button class="ib" data-act="reorder" aria-label="Изменить порядок папок">'+ico('pencil')+'</button><button class="ib" data-act="new-folder" aria-label="Добавить папку">'+ico('plus')+'</button></div>'+
    '<div class="stack"><div class="f srch"><input id="isearch" type="search" placeholder="Поиск по всем записям" value="'+esc(st.q)+'" autocomplete="off" aria-label="Поиск по всем записям"></div><div id="iresults">'+(st.q.trim()?searchHtml(st.q):foldersHtml())+'</div></div>';
 }
 function vFolder(f){
@@ -800,6 +807,44 @@ async function fileAction(i,mode){
   }catch(e){toast(e&&e.msg?e.msg:'Не удалось открыть файл')}
 }
 
+/* ---------- drag to reorder folders ---------- */
+let drag=null;
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest&&e.target.closest('#rlist .grip');if(!g)return;
+  e.preventDefault();const row=g.closest('.rrow');
+  drag={row,id:e.pointerId,y:e.clientY};row.classList.add('drag');
+  try{g.setPointerCapture(e.pointerId)}catch(_){}
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  e.preventDefault();
+  const list=document.getElementById('rlist');if(!list)return;
+  for(const r of list.children){
+    if(r===drag.row)continue;
+    const b=r.getBoundingClientRect(),mid=b.top+b.height/2;
+    const before=drag.row.compareDocumentPosition(r)&Node.DOCUMENT_POSITION_PRECEDING;
+    if(before&&e.clientY<mid){list.insertBefore(drag.row,r);break}
+    if(!before&&e.clientY>mid){list.insertBefore(drag.row,r.nextSibling)}
+  }
+  if(e.clientY<70)window.scrollBy(0,-12);else if(e.clientY>innerHeight-130)window.scrollBy(0,12);
+},{passive:false});
+async function endDrag(e){
+  if(!drag||(e&&e.pointerId!==drag.id))return;
+  drag.row.classList.remove('drag');drag=null;
+  const ids=[...document.querySelectorAll('#rlist .rrow')].map(r=>r.dataset.id);let changed=false;
+  const now=Date.now();
+  ids.forEach((id,i)=>{const f=st.data.ifolders.find(x=>x.id===id);if(f&&f.order!==i){f.order=i;f.u=now;changed=true}});
+  if(changed){await persist();scheduleSync()}
+}
+document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+document.addEventListener('keydown',e=>{
+  const g=e.target.closest&&e.target.closest('#rlist .grip');if(!g||!(e.key==='ArrowUp'||e.key==='ArrowDown'))return;
+  e.preventDefault();const row=g.closest('.rrow'),list=row.parentNode;
+  if(e.key==='ArrowUp'&&row.previousElementSibling)list.insertBefore(row,row.previousElementSibling);
+  if(e.key==='ArrowDown'&&row.nextElementSibling)list.insertBefore(row.nextElementSibling,row);
+  g.focus();drag={row,id:-1};endDrag();
+});
+
 /* ---------- events ---------- */
 let hold=null,held=false;
 document.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-hold]');if(!b)return;held=false;hold=setTimeout(()=>{held=true;if(b.dataset.hold==='fold'){const x=st.data.ifolders.find(s=>s.id===b.dataset.id);if(x)subjSheet(x,'fold')}else{const x=st.data.subjects.find(s=>s.id===b.dataset.id);if(x)subjSheet(x)}},550)});
@@ -810,7 +855,9 @@ document.addEventListener('click',e=>{
   if(held&&b.dataset.hold){held=false;return}
   const c=parse(st.cur);
   switch(a){
-   case 'view':{const was=st.view;if(st.edit)saveNote();st.view=b.dataset.v;if(st.view==='lessons'&&was==='lessons')st.subj=null;if(st.view==='interests'&&was==='interests'){st.ifolder=null;st.note=null}}window.scrollTo(0,0);render();break;
+   case 'view':{const was=st.view;if(st.edit)saveNote();st.view=b.dataset.v;if(st.view==='lessons'&&was==='lessons')st.subj=null;if(st.view==='interests'&&was==='interests'){st.ifolder=null;st.note=null}st.reorder=false;}window.scrollTo(0,0);render();break;
+   case 'reorder':st.reorder=true;st.q='';window.scrollTo(0,0);render();break;
+   case 'reorder-done':st.reorder=false;render();break;
    case 'open-folder':st.ifolder=b.dataset.id;st.note=null;window.scrollTo(0,0);render();break;
    case 'iback':st.ifolder=null;window.scrollTo(0,0);render();break;
    case 'new-folder':subjSheet(null,'fold');break;
