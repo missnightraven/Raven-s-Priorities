@@ -545,21 +545,24 @@ async function remove(){
   if(s.kind==='subj'){for(const l of st.data.lessons.filter(l=>l.subjectId===s.id))await del('lessons',l.id);st.subj=null}
   await del(map[s.kind],s.id);closeSheet();toast('Удалено');
 }
-/* adds lessons from a schedule file; never replaces anything. Same file twice = no duplicates (fixed ids). */
+/* adds lessons from a schedule file. Same file twice = no duplicates (fixed ids).
+   A lesson that is already here only gets its date and duration from the file (a rescheduled plan); text, notes and checkmarks stay. */
 async function importLessons(file){
   if(!file)return;
   let j;try{j=JSON.parse(await file.text());if(j.app!=='ravens-priorities-lessons'||!Array.isArray(j.lessons))throw 0}catch(e){toast('Это не файл с заданиями');return}
-  const ops=[],ids={},key=x=>nrm(x).trim();let order=st.data.subjects.length,made=0,added=0;
+  const ops=[],ids={},key=x=>nrm(x).trim();let order=st.data.subjects.length,made=0,added=0,moved=0;
   st.data.subjects.forEach(s=>ids[key(s.name)]=s.id);
   for(const s of j.subjects||[]){const k=key(s.name);if(ids[k])continue;const id=newId();ids[k]=id;ops.push(['put','subjects',id,{name:s.name,icon:PACK[s.icon]?s.icon:'book',iconAsset:null,color:okHex(s.color||'')?s.color:P[order%P.length],order:order++}]);made++}
   let n=Math.max(0,...st.data.lessons.map(x=>x.n??0));
   for(const l of j.lessons){
     const id='imp-'+l.key,sid=ids[key(l.subject||'')];
-    if(!sid||st.data.lessons.some(x=>x.id===id)||(st.tomb.lessons||{})[id])continue;
+    const ex=st.data.lessons.find(x=>x.id===id);
+    if(ex){const date=l.date||'',dur=+l.dur||null;if(ex.date!==date||(ex.dur||null)!==dur){const{u,id:_,...rest}=ex;ops.push(['put','lessons',id,{...rest,date,dur}]);moved++}continue}
+    if(!sid||(st.tomb.lessons||{})[id])continue;
     ops.push(['put','lessons',id,{subjectId:sid,topic:l.topic||'Без названия',desc:l.desc||'',material:l.material||'',stop:l.extra||'',date:l.date||'',dur:+l.dur||null,done:false,n:++n}]);added++;
   }
   if(!ops.length){toast('Эти задания уже добавлены');return}
-  await commit(ops);toast('Добавлено заданий: '+added+(made?', новых предметов: '+made:''));
+  await commit(ops);toast([added?'Добавлено заданий: '+added:'',moved?'Перенесено на новые даты: '+moved:'',made?'Новых предметов: '+made:''].filter(Boolean).join(' · '));
 }
 async function shrink(file,max){
   try{const bmp=await createImageBitmap(file);const k=Math.min(1,(max||1600)/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',.86))}catch(e){return file}
